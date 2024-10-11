@@ -12,6 +12,8 @@ libtcod_fov_include_HEADERS = \
 	../../src/libtcod-fov/fov_types.h \
 	../../src/libtcod-fov/libtcod_int.h \
 	../../src/libtcod-fov/logging.h \
+	../../src/libtcod-fov/map_inline.h \
+	../../src/libtcod-fov/map_types.h \
 	../../src/libtcod-fov/utility.h \
 	../../src/libtcod-fov/version.h
 

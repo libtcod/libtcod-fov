@@ -20,6 +20,8 @@ target_sources(${PROJECT_NAME} PRIVATE
     libtcod-fov/libtcod_int.h
     libtcod-fov/logging.c
     libtcod-fov/logging.h
+    libtcod-fov/map_inline.h
+    libtcod-fov/map_types.h
     libtcod-fov/utility.h
     libtcod-fov/version.h
 )
@@ -39,6 +41,8 @@ install(FILES
     libtcod-fov/fov_types.h
     libtcod-fov/libtcod_int.h
     libtcod-fov/logging.h
+    libtcod-fov/map_inline.h
+    libtcod-fov/map_types.h
     libtcod-fov/utility.h
     libtcod-fov/version.h
     DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/libtcod-fov
@@ -65,6 +69,8 @@ source_group(libtcod-fov FILES
     libtcod-fov/libtcod_int.h
     libtcod-fov/logging.c
     libtcod-fov/logging.h
+    libtcod-fov/map_inline.h
+    libtcod-fov/map_types.h
     libtcod-fov/utility.h
     libtcod-fov/version.h
 )

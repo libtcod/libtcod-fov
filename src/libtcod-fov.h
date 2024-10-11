@@ -37,6 +37,7 @@
 #include "libtcod-fov/error.h"
 #include "libtcod-fov/fov.h"
 #include "libtcod-fov/logging.h"
+#include "libtcod-fov/map_types.h"
 #include "libtcod-fov/version.h"
 
 #ifdef __cplusplus
