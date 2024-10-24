@@ -4,6 +4,7 @@
         120
     ],
     "files.associations": {
+        "*.manifest": "xml",
         "*.cmake.in": "cmake",
         "*.h": "cpp",
         "algorithm": "cpp",
@@ -97,9 +98,13 @@
         "cfloat": "cpp",
         "ciso646": "cpp",
         "climits": "cpp",
-        "coroutine": "cpp"
+        "coroutine": "cpp",
+        "ranges": "cpp",
+        "span": "cpp"
     },
     "files.trimFinalNewlines": true,
+    "files.insertFinalNewline": true,
+    "files.trimTrailingWhitespace": true,
     "C_Cpp.default.cppStandard": "c++17",
     "C_Cpp.default.cStandard": "c99",
     "C_Cpp.vcpkg.enabled": true,

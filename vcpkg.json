@@ -9,9 +9,7 @@
   "documentation": "https://libtcod.readthedocs.io/en/latest/",
   "license": "BSD-3-Clause",
   "dependencies": [],
-  "default-features": [
-    "tests"
-  ],
+  "default-features": [],
   "features": {
     "tests": {
       "description": "Dependencies needed for testing.",
@@ -20,6 +18,12 @@
           "name": "catch2",
           "version>=": "3.0.1"
         }
+      ]
+    },
+    "fovtool": {
+      "description": "Dependencies needed for fovtool.",
+      "dependencies": [
+        "cli11"
       ]
     }
   }
