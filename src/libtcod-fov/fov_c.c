@@ -198,7 +198,7 @@ TCODFOV_Error TCODFOV_map_compute_fov(
           map, pov_x, pov_y, max_radius, light_walls, algo - TCODFOV_PERMISSIVE_0);
     case TCODFOV_RESTRICTIVE:
       return TCODFOV_map_compute_fov_restrictive_shadowcasting(map, pov_x, pov_y, max_radius, light_walls);
-    case FOV_SYMMETRIC_SHADOWCAST:
+    case TCODFOV_SYMMETRIC_SHADOWCAST:
       return TCODFOV_map_compute_fov_symmetric_shadowcast(map, pov_x, pov_y, max_radius, light_walls);
     default:
       return TCODFOV_E_INVALID_ARGUMENT;

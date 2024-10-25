@@ -2,7 +2,7 @@ cmake_minimum_required (VERSION 3.13...3.21)
 
 project(
     fovtool
-    LANGUAGES C CXX
+    LANGUAGES CXX
 )
 
 file(
@@ -13,10 +13,10 @@ file(
 )
 add_executable(${PROJECT_NAME} ${SOURCE_FILES})
 
-target_compile_features(${PROJECT_NAME} PRIVATE cxx_std_17)
+target_compile_features(${PROJECT_NAME} PRIVATE cxx_std_20)
 
 if (MSVC)
-    target_compile_options(${PROJECT_NAME} PRIVATE /utf-8)
+    target_compile_options(${PROJECT_NAME} PRIVATE /utf-8 /Zc:__cplusplus)
     target_sources(${PROJECT_NAME} PRIVATE "app.manifest")
 
 endif()
@@ -28,10 +28,16 @@ else()
 endif()
 
 find_package(CLI11 CONFIG REQUIRED)
+find_package(fmt CONFIG REQUIRED)
+find_package(Microsoft.GSL CONFIG REQUIRED)
+find_package(utf8cpp CONFIG REQUIRED)
 
 target_link_libraries(
     ${PROJECT_NAME}
     PRIVATE
         libtcod-fov::libtcod-fov
         CLI11::CLI11
+        fmt::fmt
+        Microsoft.GSL::GSL
+        utf8::cpp
 )

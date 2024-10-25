@@ -38,7 +38,6 @@
 
 #include "fov.h"
 
-class TCODPath;
 /**
  @PageName fov
  @PageCategory Roguelike toolkits
@@ -47,7 +46,9 @@ class TCODPath;
 A cell is potentially visible if the line of sight from the player to the cell in unobstructed.
  */
 
-class TCODFOV_PUBLIC TCODMap {
+
+namespace tcod::fov {
+class TCODMap {
 	public :
 		/**
 		@PageName fov_init
@@ -276,5 +277,6 @@ class TCODFOV_PUBLIC TCODMap {
 //	protected :
 		TCODFOV_Map* data{};
 };
+} // namespace tcod::fov
 
 #endif // TCODFOV_FOV_HPP_

@@ -105,7 +105,7 @@ typedef enum TCODFOV_fov_algorithm_t {
       .. versionadded :: 1.16
       \endrst
    */
-  FOV_SYMMETRIC_SHADOWCAST,
+  TCODFOV_SYMMETRIC_SHADOWCAST,
   NB_FOV_ALGORITHMS
 } TCODFOV_fov_algorithm_t;
 #define FOV_PERMISSIVE(x) ((TCODFOV_fov_algorithm_t)(TCODFOV_PERMISSIVE_0 + (x)))

@@ -36,12 +36,12 @@ jobs:
             shared: dynamic
             config: Release
 
-          - os: macos-13
-            triplet: x64-osx
+          - os: macos-14
+            triplet: arm64-osx
             shared: static
             config: Debug
-          - os: macos-13
-            triplet: x64-osx
+          - os: macos-14
+            triplet: arm64-osx
             shared: dynamic
             config: Release
 

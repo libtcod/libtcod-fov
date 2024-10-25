@@ -23,7 +23,10 @@
     "fovtool": {
       "description": "Dependencies needed for fovtool.",
       "dependencies": [
-        "cli11"
+        "cli11",
+        "fmt",
+        "ms-gsl",
+        "utfcpp"
       ]
     }
   }

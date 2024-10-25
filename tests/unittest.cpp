@@ -96,8 +96,8 @@ TEST_CASE("FOV Benchmarks", "[.benchmark]") {
     BENCHMARK(map_name + " TCODFOV_PERMISSIVE_8") {
       (void)!TCODFOV_map_compute_fov(map, radius, radius, 0, true, TCODFOV_PERMISSIVE_8);
     };
-    BENCHMARK(map_name + " FOV_SYMMETRIC_SHADOWCAST") {
-      (void)!TCODFOV_map_compute_fov(map, radius, radius, 0, true, FOV_SYMMETRIC_SHADOWCAST);
+    BENCHMARK(map_name + " TCODFOV_SYMMETRIC_SHADOWCAST") {
+      (void)!TCODFOV_map_compute_fov(map, radius, radius, 0, true, TCODFOV_SYMMETRIC_SHADOWCAST);
     };
   }
 }

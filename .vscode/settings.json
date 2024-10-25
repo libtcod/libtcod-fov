@@ -100,7 +100,12 @@
         "climits": "cpp",
         "coroutine": "cpp",
         "ranges": "cpp",
-        "span": "cpp"
+        "span": "cpp",
+        "gsl": "cpp",
+        "pointers": "cpp",
+        "stacktrace": "cpp",
+        "assert": "cpp",
+        "narrow": "cpp"
     },
     "files.trimFinalNewlines": true,
     "files.insertFinalNewline": true,
