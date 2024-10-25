@@ -23,15 +23,15 @@ jobs:
       fail-fast: true
       matrix:
         include:
-          - os: ubuntu-22.04
+          - os: ubuntu-24.04
             triplet: x64-linux
             shared: dynamic
             config: Debug
-          - os: ubuntu-22.04
+          - os: ubuntu-24.04
             triplet: x64-linux
             shared: static
             config: Debug
-          - os: ubuntu-22.04
+          - os: ubuntu-24.04
             triplet: x64-linux
             shared: dynamic
             config: Release
@@ -118,7 +118,7 @@ jobs:
       fail-fast: true
       matrix:
         include:
-          - os: ubuntu-22.04
+          - os: ubuntu-24.04
             triplet: x64-linux
     steps:
       - uses: actions/checkout@v4
@@ -159,7 +159,7 @@ jobs:
       - name: List coverage files
         run: find . | grep -e ".gc..$"
       - name: Generate coverage data
-        run: gcov CMakeFiles/libtcod.dir/src/libtcod/*.o CMakeFiles/libtcod.dir/src/libtcod/*/*.o tests/CMakeFiles/unittest.dir/*.o
+        run: gcov CMakeFiles/libtcod-fov.dir/src/libtcod-fov/**.o tests/CMakeFiles/unittest.dir/*.o
       - uses: codecov/codecov-action@v4
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
@@ -169,7 +169,7 @@ jobs:
     strategy:
       fail-fast: true
       matrix:
-        os: [ubuntu-22.04, macos-13]
+        os: [ubuntu-24.04, macos-14]
     steps:
       - uses: actions/checkout@v4
       - name: Set up Python 3
@@ -184,7 +184,10 @@ jobs:
       - name: Install Brew dependencies
         if: runner.os == 'macOS'
         run: |
-          brew install automake sdl2
+          brew install automake sdl2 libtool
+      - name: libtoolize
+        run: ${{ runner.os == 'macOS' && 'glibtoolize' || 'libtoolize' }} --install
+        working-directory: buildsys/autotools
       - name: Configure package
         working-directory: buildsys/autotools
         run: |
