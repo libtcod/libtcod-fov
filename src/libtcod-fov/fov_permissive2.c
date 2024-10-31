@@ -37,6 +37,8 @@
 
 #include "fov.h"
 #include "libtcod_int.h"
+#include "map_inline.h"
+#include "map_types.h"
 #include "utility.h"
 
 /* The size of each square in units */
@@ -103,13 +105,21 @@ static void view_array_insert(ActiveViewArray* view_array, ptrdiff_t index, View
 static View** view_array_end(const ActiveViewArray* view_array) { return view_array->view_ptrs + view_array->count; }
 
 /// @brief Set a maps FOV-bit and return true if the tile is blocked.
-static bool is_blocked(TCODFOV_Map* map, int pov_x, int pov_y, int x, int y, int dx, int dy, bool light_walls) {
+static bool is_blocked(
+    const TCODFOV_Map2D* __restrict transparent,
+    TCODFOV_Map2D* __restrict fov,
+    int pov_x,
+    int pov_y,
+    int x,
+    int y,
+    int dx,
+    int dy,
+    bool light_walls) {
   const int pos_x = x * dx / STEP_SIZE + pov_x;
   const int pos_y = y * dy / STEP_SIZE + pov_y;
-  const int cells_offset = pos_x + pos_y * map->width;
-  const bool blocked = !map->cells[cells_offset].transparent;
+  const bool blocked = !TCODFOV_map2d_get_bool(transparent, pos_x, pos_y);
   if (!blocked || light_walls) {
-    map->cells[cells_offset].fov = 1;
+    TCODFOV_map2d_set_bool(fov, pos_x, pos_y, true);
   }
   return blocked;
 }
@@ -164,7 +174,8 @@ static bool check_view(ActiveViewArray* active_views, View** it, int offset, int
 }
 
 static void visit_coords(
-    TCODFOV_Map* __restrict map,
+    const TCODFOV_Map2D* __restrict transparent,
+    TCODFOV_Map2D* __restrict fov,
     int pov_x,
     int pov_y,
     int x,
@@ -195,7 +206,7 @@ static void visit_coords(
   if (*current_view == view_array_end(active_views) || ABOVE_OR_COLINEAR(&view->shallow_line, tlx, tly)) {
     return; /* no more active view */
   }
-  if (!is_blocked(map, pov_x, pov_y, x, y, dx, dy, light_walls)) {
+  if (!is_blocked(transparent, fov, pov_x, pov_y, x, y, dx, dy, light_walls)) {
     return;
   }
   if (ABOVE(&view->shallow_line, brx, bry) && BELOW(&view->steep_line, tlx, tly)) {
@@ -211,7 +222,7 @@ static void visit_coords(
     check_view(active_views, *current_view, offset, limit);
   } else {
     /* view split */
-    const int views_offset = pov_x + x * dx / STEP_SIZE + (pov_y + y * dy / STEP_SIZE) * map->width;
+    const int views_offset = pov_x + x * dx / STEP_SIZE + (pov_y + y * dy / STEP_SIZE) * TCODFOV_map2d_get_width(fov);
     View* shallower_view = &views[views_offset];
     const ptrdiff_t view_index = *current_view - active_views->view_ptrs;
     View** shallower_view_it;
@@ -234,7 +245,8 @@ static void visit_coords(
 }
 
 static void check_quadrant(
-    TCODFOV_Map* __restrict map,
+    const TCODFOV_Map2D* __restrict transparent,
+    TCODFOV_Map2D* __restrict fov,
     int pov_x,
     int pov_y,
     int dx,
@@ -253,7 +265,7 @@ static void check_quadrant(
 
   const Line shallow_line = {offset, limit, extent_x * STEP_SIZE, 0};
   const Line steep_line = {limit, offset, 0, extent_y * STEP_SIZE};
-  View* view = &views[pov_x + pov_y * map->width];
+  View* view = &views[pov_x + pov_y * TCODFOV_map2d_get_width(fov)];
 
   view->shallow_line = shallow_line;
   view->steep_line = steep_line;
@@ -275,13 +287,33 @@ static void check_quadrant(
       const int x = (i - j) * STEP_SIZE;
       const int y = j * STEP_SIZE;
       visit_coords(
-          map, pov_x, pov_y, x, y, dx, dy, active_views, &current_view, light_walls, offset, limit, views, bumps);
+          transparent,
+          fov,
+          pov_x,
+          pov_y,
+          x,
+          y,
+          dx,
+          dy,
+          active_views,
+          &current_view,
+          light_walls,
+          offset,
+          limit,
+          views,
+          bumps);
     }
   }
 }
 
 TCODFOV_Error TCODFOV_map_compute_fov_permissive2(
-    TCODFOV_Map* __restrict map, int pov_x, int pov_y, int max_radius, bool light_walls, int permissiveness) {
+    const TCODFOV_Map2D* __restrict transparent,
+    TCODFOV_Map2D* __restrict fov,
+    int pov_x,
+    int pov_y,
+    int max_radius,
+    bool light_walls,
+    int permissiveness) {
   if (!(0 <= permissiveness && permissiveness <= 8)) {
     TCODFOV_set_errorvf("Bad permissiveness %d for FOV_PERMISSIVE. Accepted range is [0,8].", permissiveness);
     return TCODFOV_E_INVALID_ARGUMENT;
@@ -291,16 +323,19 @@ TCODFOV_Error TCODFOV_map_compute_fov_permissive2(
   const int offset = 8 - permissiveness;
   const int limit = 8 + permissiveness;
 
-  if (!TCODFOV_map_in_bounds(map, pov_x, pov_y)) {
+  if (!TCODFOV_map2d_in_bounds(fov, pov_x, pov_y)) {
     TCODFOV_set_errorvf("Point of view {%i, %i} is out of bounds.", pov_x, pov_y);
     return TCODFOV_E_INVALID_ARGUMENT;
   }
-  map->cells[pov_x + pov_y * map->width].fov = 1;
+  TCODFOV_map2d_set_bool(fov, pov_x, pov_y, true);
 
   // Preallocate views and bumps, assuming there will be no more bumps or active views than the number of map tiles.
-  View* views = malloc(map->width * map->height * sizeof(*views));
-  ViewBumpContainer bumps = {.data = malloc(map->width * map->height * sizeof(*bumps.data))};
-  ActiveViewArray active_views = {.view_ptrs = malloc(map->width * map->height * sizeof(*active_views.view_ptrs))};
+  View* views = malloc(TCODFOV_map2d_get_width(fov) * TCODFOV_map2d_get_height(fov) * sizeof(*views));
+  ViewBumpContainer bumps = {
+      .data = malloc(TCODFOV_map2d_get_width(fov) * TCODFOV_map2d_get_height(fov) * sizeof(*bumps.data))};
+  ActiveViewArray active_views = {
+      .view_ptrs =
+          malloc(TCODFOV_map2d_get_width(fov) * TCODFOV_map2d_get_height(fov) * sizeof(*active_views.view_ptrs))};
   if (!views || !bumps.data || !active_views.view_ptrs) {
     free(bumps.data);
     free(views);
@@ -310,9 +345,9 @@ TCODFOV_Error TCODFOV_map_compute_fov_permissive2(
   }
   /* set the fov range */
   int min_x = pov_x;
-  int max_x = map->width - pov_x - 1;
+  int max_x = TCODFOV_map2d_get_width(fov) - pov_x - 1;
   int min_y = pov_y;
-  int max_y = map->height - pov_y - 1;
+  int max_y = TCODFOV_map2d_get_height(fov) - pov_y - 1;
   if (max_radius > 0) {
     min_x = MIN(min_x, max_radius);
     max_x = MIN(max_x, max_radius);
@@ -320,10 +355,14 @@ TCODFOV_Error TCODFOV_map_compute_fov_permissive2(
     max_y = MIN(max_y, max_radius);
   }
   /* calculate fov. precise permissive field of view */
-  check_quadrant(map, pov_x, pov_y, 1, 1, max_x, max_y, light_walls, offset, limit, views, &bumps, &active_views);
-  check_quadrant(map, pov_x, pov_y, 1, -1, max_x, min_y, light_walls, offset, limit, views, &bumps, &active_views);
-  check_quadrant(map, pov_x, pov_y, -1, -1, min_x, min_y, light_walls, offset, limit, views, &bumps, &active_views);
-  check_quadrant(map, pov_x, pov_y, -1, 1, min_x, max_y, light_walls, offset, limit, views, &bumps, &active_views);
+  check_quadrant(
+      transparent, fov, pov_x, pov_y, 1, 1, max_x, max_y, light_walls, offset, limit, views, &bumps, &active_views);
+  check_quadrant(
+      transparent, fov, pov_x, pov_y, 1, -1, max_x, min_y, light_walls, offset, limit, views, &bumps, &active_views);
+  check_quadrant(
+      transparent, fov, pov_x, pov_y, -1, -1, min_x, min_y, light_walls, offset, limit, views, &bumps, &active_views);
+  check_quadrant(
+      transparent, fov, pov_x, pov_y, -1, 1, min_x, max_y, light_walls, offset, limit, views, &bumps, &active_views);
   free(bumps.data);
   free(views);
   free(active_views.view_ptrs);

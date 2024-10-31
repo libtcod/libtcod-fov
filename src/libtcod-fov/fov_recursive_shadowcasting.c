@@ -36,6 +36,8 @@
 
 #include "fov.h"
 #include "libtcod_int.h"
+#include "map_inline.h"
+#include "map_types.h"
 #include "utility.h"
 /**
     Octant transformation matrixes.
@@ -56,7 +58,8 @@ static const int matrix_table[8][4] = {
     Cast visiblity using shadowcasting.
  */
 static void cast_light(
-    struct TCODFOV_Map* __restrict map,
+    const TCODFOV_Map2D* __restrict transparent,
+    TCODFOV_Map2D* __restrict fov,
     int pov_x,
     int pov_y,
     int distance,  // Polar distance from POV.
@@ -76,7 +79,7 @@ static void cast_light(
   if (distance > max_radius) {
     return;  // Distance is out-of-range.
   }
-  if (!TCODFOV_map_in_bounds(map, pov_x + distance * xy, pov_y + distance * yy)) {
+  if (!TCODFOV_map2d_in_bounds(fov, pov_x + distance * xy, pov_y + distance * yy)) {
     return;  // Distance is out-of-bounds.
   }
   bool prev_tile_blocked = false;
@@ -92,43 +95,59 @@ static void cast_light(
     // Current tile is in view.
     const int map_x = pov_x + angle * xx + distance * xy;
     const int map_y = pov_y + angle * yx + distance * yy;
-    if (!TCODFOV_map_in_bounds(map, map_x, map_y)) {
+    if (!TCODFOV_map2d_in_bounds(fov, map_x, map_y)) {
       continue;  // Angle is out-of-bounds.
     }
-    const int map_index = map_x + map_y * map->width;
-    if (angle * angle + distance * distance <= radius_squared && (light_walls || map->cells[map_index].transparent)) {
-      map->cells[map_index].fov = true;
+    if (angle * angle + distance * distance <= radius_squared &&
+        (light_walls || TCODFOV_map2d_get_bool(transparent, map_x, map_y))) {
+      TCODFOV_map2d_set_bool(fov, map_x, map_y, true);
     }
-    if (prev_tile_blocked && map->cells[map_index].transparent) {  // Wall -> floor.
+    if (prev_tile_blocked && TCODFOV_map2d_get_bool(transparent, map_x, map_y)) {  // Wall -> floor.
       view_slope_high = prev_tile_slope_low;  // Reduce the view size.
     }
-    if (!prev_tile_blocked && !map->cells[map_index].transparent) {  // Floor -> wall.
+    if (!prev_tile_blocked && !TCODFOV_map2d_get_bool(transparent, map_x, map_y)) {  // Floor -> wall.
       // Get the last sequence of floors as a view and recurse into them.
-      cast_light(map, pov_x, pov_y, distance + 1, view_slope_high, tile_slope_high, max_radius, octant, light_walls);
+      cast_light(
+          transparent,
+          fov,
+          pov_x,
+          pov_y,
+          distance + 1,
+          view_slope_high,
+          tile_slope_high,
+          max_radius,
+          octant,
+          light_walls);
     }
-    prev_tile_blocked = !map->cells[map_index].transparent;
+    prev_tile_blocked = !TCODFOV_map2d_get_bool(transparent, map_x, map_y);
   }
   if (!prev_tile_blocked) {
     // Tail-recurse into the current view.
-    cast_light(map, pov_x, pov_y, distance + 1, view_slope_high, view_slope_low, max_radius, octant, light_walls);
+    cast_light(
+        transparent, fov, pov_x, pov_y, distance + 1, view_slope_high, view_slope_low, max_radius, octant, light_walls);
   }
 }
 
 TCODFOV_Error TCODFOV_map_compute_fov_recursive_shadowcasting(
-    TCODFOV_Map* __restrict map, int pov_x, int pov_y, int max_radius, bool light_walls) {
-  if (!TCODFOV_map_in_bounds(map, pov_x, pov_y)) {
+    const TCODFOV_Map2D* __restrict transparent,
+    TCODFOV_Map2D* __restrict fov,
+    int pov_x,
+    int pov_y,
+    int max_radius,
+    bool light_walls) {
+  if (!TCODFOV_map2d_in_bounds(fov, pov_x, pov_y)) {
     TCODFOV_set_errorvf("Point of view {%i, %i} is out of bounds.", pov_x, pov_y);
     return TCODFOV_E_INVALID_ARGUMENT;
   }
   if (max_radius <= 0) {
-    int max_radius_x = MAX(map->width - pov_x, pov_x);
-    int max_radius_y = MAX(map->height - pov_y, pov_y);
+    const int max_radius_x = MAX(TCODFOV_map2d_get_width(fov) - pov_x, pov_x);
+    const int max_radius_y = MAX(TCODFOV_map2d_get_height(fov) - pov_y, pov_y);
     max_radius = (int)(sqrt(max_radius_x * max_radius_x + max_radius_y * max_radius_y)) + 1;
   }
   /* recursive shadow casting */
   for (int octant = 0; octant < 8; ++octant) {
-    cast_light(map, pov_x, pov_y, 1, 1.0, 0.0, max_radius, octant, light_walls);
+    cast_light(transparent, fov, pov_x, pov_y, 1, 1.0, 0.0, max_radius, octant, light_walls);
   }
-  map->cells[pov_x + pov_y * map->width].fov = 1;
+  TCODFOV_map2d_set_bool(fov, pov_x, pov_y, true);
   return TCODFOV_E_OK;
 }

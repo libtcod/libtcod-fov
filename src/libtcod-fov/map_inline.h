@@ -1,6 +1,7 @@
 #pragma once
 #ifndef TCODFOV_MAP_INLINE_H_
 #define TCODFOV_MAP_INLINE_H_
+#include "fov_types.h"
 #include "map_types.h"
 
 /// @brief Return the width of a 2D map.
@@ -55,7 +56,7 @@ static inline bool TCODFOV_map2d_get_bool(const TCODFOV_Map2D* __restrict map, i
       if (!map->bool_callback.get) return 0;
       return map->bool_callback.get(map->bool_callback.userdata, x, y);
     case TCODFOV_MAP2D_DEPRECATED: {
-      const TCODFOV_MapCell* cell = &map->deprecated_map.map.cells[map->deprecated_map.map.width * y + x];
+      const struct TCODFOV_MapCell* cell = &map->deprecated_map.map.cells[map->deprecated_map.map.width * y + x];
       switch (map->deprecated_map.select) {
         default:
         case 0:
@@ -70,7 +71,7 @@ static inline bool TCODFOV_map2d_get_bool(const TCODFOV_Map2D* __restrict map, i
       return 0;
   }
 }
-/// @brief Assign the boolean `value` to `{x, y}` on `map`.
+/// @brief Assign the boolean `value` to `{x, y}` on `map`. Out-of-bounds writes are ignored.
 /// @param map Map union pointer, can be NULL.
 /// @param x X coordinate.
 /// @param y Y coordinate.
@@ -81,9 +82,10 @@ static inline void TCODFOV_map2d_set_bool(TCODFOV_Map2D* __restrict map, int x, 
   switch (map->type) {
     case TCODFOV_MAP2D_CALLBACK:
       if (!map->bool_callback.set) return;
-      return map->bool_callback.set(map->bool_callback.userdata, x, y, value);
+      map->bool_callback.set(map->bool_callback.userdata, x, y, value);
+      return;
     case TCODFOV_MAP2D_DEPRECATED: {
-      TCODFOV_MapCell* cell = &map->deprecated_map.map.cells[map->deprecated_map.map.width * y + x];
+      struct TCODFOV_MapCell* cell = &map->deprecated_map.map.cells[map->deprecated_map.map.width * y + x];
       switch (map->deprecated_map.select) {
         default:
         case 0:

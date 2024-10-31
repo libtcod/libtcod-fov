@@ -36,10 +36,13 @@
 
 #include "fov.h"
 #include "libtcod_int.h"
+#include "map_inline.h"
+#include "map_types.h"
 #include "utility.h"
 
 static void compute_quadrant(
-    TCODFOV_Map* __restrict map,
+    const TCODFOV_Map2D* __restrict transparent,
+    TCODFOV_Map2D* __restrict fov,
     int pov_x,
     int pov_y,
     int max_radius,
@@ -55,40 +58,37 @@ static void compute_quadrant(
     int total_obstacles = 0;
     int obstacles_in_last_line = 0;
     double min_angle = 0.0;
-    int x;
-    int y;
 
     /* do while there are unblocked slopes left and the algo is within the map's boundaries
        scan progressive lines/columns from the PC outwards */
-    y = pov_y + dy; /* the outer slope's coordinates (first processed line) */
-    if (y < 0 || y >= map->height) {
+    int y = pov_y + dy; /* the outer slope's coordinates (first processed line) */
+    if (y < 0 || y >= TCODFOV_map2d_get_height(fov)) {
       done = true;
     }
     while (!done) {
       /* process cells in the line */
-      double slopes_per_cell = 1.0 / (double)(iteration);
-      double half_slopes = slopes_per_cell * 0.5;
+      const double slopes_per_cell = 1.0 / (double)(iteration);
+      const double half_slopes = slopes_per_cell * 0.5;
       int processed_cell = (int)((min_angle + half_slopes) / slopes_per_cell);
-      int minx = MAX(0, pov_x - iteration);
-      int maxx = MIN(map->width - 1, pov_x + iteration);
+      const int minx = MAX(0, pov_x - iteration);
+      const int maxx = MIN(TCODFOV_map2d_get_width(fov) - 1, pov_x + iteration);
       done = true;
-      for (x = pov_x + (processed_cell * dx); x >= minx && x <= maxx; x += dx) {
-        int c = x + (y * map->width);
+      for (int x = pov_x + (processed_cell * dx); x >= minx && x <= maxx; x += dx) {
         /* calculate slopes per cell */
         bool visible = true;
         bool extended = false;
-        double centre_slope = (double)processed_cell * slopes_per_cell;
-        double start_slope = centre_slope - half_slopes;
-        double end_slope = centre_slope + half_slopes;
+        const double centre_slope = (double)processed_cell * slopes_per_cell;
+        const double start_slope = centre_slope - half_slopes;
+        const double end_slope = centre_slope + half_slopes;
         if (obstacles_in_last_line > 0) {
-          if (!(map->cells[c - (map->width * dy)].fov && map->cells[c - (map->width * dy)].transparent) &&
-              !(map->cells[c - (map->width * dy) - dx].fov && map->cells[c - (map->width * dy) - dx].transparent)) {
+          if (!(TCODFOV_map2d_get_bool(fov, x, y - dy) && TCODFOV_map2d_get_bool(transparent, x, y - dy)) &&
+              !(TCODFOV_map2d_get_bool(fov, x - dx, y - dy) && TCODFOV_map2d_get_bool(transparent, x - dx, y - dy))) {
             visible = false;
           } else {
             int idx;
             for (idx = 0; idx < obstacles_in_last_line && visible; ++idx) {
               if (start_slope <= end_angle[idx] && end_slope >= start_angle[idx]) {
-                if (map->cells[c].transparent) {
+                if (TCODFOV_map2d_get_bool(transparent, x, y)) {
                   if (centre_slope > start_angle[idx] && centre_slope < end_angle[idx]) {
                     visible = false;
                   }
@@ -107,9 +107,9 @@ static void compute_quadrant(
         }
         if (visible) {
           done = false;
-          map->cells[c].fov = true;
+          TCODFOV_map2d_set_bool(fov, x, y, true);
           /* if the cell is opaque, block the adjacent slopes */
-          if (!map->cells[c].transparent) {
+          if (!TCODFOV_map2d_get_bool(transparent, x, y)) {
             if (min_angle >= start_slope) {
               min_angle = end_slope;
               /* if min_angle is applied to the last cell in line, nothing more
@@ -122,7 +122,7 @@ static void compute_quadrant(
               end_angle[total_obstacles++] = end_slope;
             }
             if (!light_walls) {
-              map->cells[c].fov = false;
+              TCODFOV_map2d_set_bool(fov, x, y, false);
             }
           }
         }
@@ -134,7 +134,7 @@ static void compute_quadrant(
       iteration++;
       obstacles_in_last_line = total_obstacles;
       y += dy;
-      if (y < 0 || y >= map->height) {
+      if (y < 0 || y >= TCODFOV_map2d_get_height(fov)) {
         done = true;
       }
     }
@@ -147,40 +147,37 @@ static void compute_quadrant(
     int total_obstacles = 0;
     int obstacles_in_last_line = 0;
     double min_angle = 0.0;
-    int x;
-    int y;
 
     /* do while there are unblocked slopes left and the algo is within the map's boundaries
        scan progressive lines/columns from the PC outwards */
-    x = pov_x + dx; /*the outer slope's coordinates (first processed line) */
-    if (x < 0 || x >= map->width) {
+    int x = pov_x + dx; /*the outer slope's coordinates (first processed line) */
+    if (x < 0 || x >= TCODFOV_map2d_get_width(fov)) {
       done = true;
     }
     while (!done) {
       /* process cells in the line */
-      double slopes_per_cell = 1.0 / (double)(iteration);
-      double half_slopes = slopes_per_cell * 0.5;
+      const double slopes_per_cell = 1.0 / (double)(iteration);
+      const double half_slopes = slopes_per_cell * 0.5;
       int processed_cell = (int)((min_angle + half_slopes) / slopes_per_cell);
-      int miny = MAX(0, pov_y - iteration);
-      int maxy = MIN(map->height - 1, pov_y + iteration);
+      const int miny = MAX(0, pov_y - iteration);
+      const int maxy = MIN(TCODFOV_map2d_get_height(fov) - 1, pov_y + iteration);
       done = true;
-      for (y = pov_y + (processed_cell * dy); y >= miny && y <= maxy; y += dy) {
-        int c = x + (y * map->width);
+      for (int y = pov_y + (processed_cell * dy); y >= miny && y <= maxy; y += dy) {
         /* calculate slopes per cell */
         bool visible = true;
         bool extended = false;
-        double centre_slope = (double)processed_cell * slopes_per_cell;
-        double start_slope = centre_slope - half_slopes;
-        double end_slope = centre_slope + half_slopes;
+        const double centre_slope = (double)processed_cell * slopes_per_cell;
+        const double start_slope = centre_slope - half_slopes;
+        const double end_slope = centre_slope + half_slopes;
         if (obstacles_in_last_line > 0) {
-          if (!(map->cells[c - dx].fov && map->cells[c - dx].transparent) &&
-              !(map->cells[c - (map->width * dy) - dx].fov && map->cells[c - (map->width * dy) - dx].transparent)) {
+          if (!(TCODFOV_map2d_get_bool(fov, x - dx, y) && TCODFOV_map2d_get_bool(transparent, x - dx, y)) &&
+              !(TCODFOV_map2d_get_bool(fov, x - dx, y - dy) && TCODFOV_map2d_get_bool(transparent, x - dx, y - dy))) {
             visible = false;
           } else {
             int idx;
             for (idx = 0; idx < obstacles_in_last_line && visible; ++idx) {
               if (start_slope <= end_angle[idx] && end_slope >= start_angle[idx]) {
-                if (map->cells[c].transparent) {
+                if (TCODFOV_map2d_get_bool(transparent, x, y)) {
                   if (centre_slope > start_angle[idx] && centre_slope < end_angle[idx]) {
                     visible = false;
                   }
@@ -200,9 +197,9 @@ static void compute_quadrant(
         }
         if (visible) {
           done = false;
-          map->cells[c].fov = true;
+          TCODFOV_map2d_set_bool(fov, x, y, true);
           /* if the cell is opaque, block the adjacent slopes */
-          if (!map->cells[c].transparent) {
+          if (!TCODFOV_map2d_get_bool(transparent, x, y)) {
             if (min_angle >= start_slope) {
               min_angle = end_slope;
               /* if min_angle is applied to the last cell in line, nothing more
@@ -215,7 +212,7 @@ static void compute_quadrant(
               end_angle[total_obstacles++] = end_slope;
             }
             if (!light_walls) {
-              map->cells[c].fov = false;
+              TCODFOV_map2d_set_bool(fov, x, y, false);
             }
           }
         }
@@ -227,7 +224,7 @@ static void compute_quadrant(
       iteration++;
       obstacles_in_last_line = total_obstacles;
       x += dx;
-      if (x < 0 || x >= map->width) {
+      if (x < 0 || x >= TCODFOV_map2d_get_width(fov)) {
         done = true;
       }
     }
@@ -235,16 +232,21 @@ static void compute_quadrant(
 }
 
 TCODFOV_Error TCODFOV_map_compute_fov_restrictive_shadowcasting(
-    TCODFOV_Map* __restrict map, int pov_x, int pov_y, int max_radius, bool light_walls) {
-  if (!TCODFOV_map_in_bounds(map, pov_x, pov_y)) {
+    const TCODFOV_Map2D* __restrict transparent,
+    TCODFOV_Map2D* __restrict fov,  // Must be read/write
+    int pov_x,
+    int pov_y,
+    int max_radius,
+    bool light_walls) {
+  if (!TCODFOV_map2d_in_bounds(fov, pov_x, pov_y)) {
     TCODFOV_set_errorvf("Point of view {%i, %i} is out of bounds.", pov_x, pov_y);
     return TCODFOV_E_INVALID_ARGUMENT;
   }
   /* set PC's position as visible */
-  map->cells[pov_x + (pov_y * map->width)].fov = true;
+  TCODFOV_map2d_set_bool(fov, pov_x, pov_y, true);
 
   /* calculate an approximated (excessive, just in case) maximum number of obstacles per octant */
-  const int max_obstacles = map->nbcells / 7;
+  const int max_obstacles = (TCODFOV_map2d_get_width(fov) * TCODFOV_map2d_get_height(fov)) / 7;
   double* start_angle = malloc(max_obstacles * sizeof(*start_angle));
   double* end_angle = malloc(max_obstacles * sizeof(*end_angle));
   if (!start_angle || !end_angle) {
@@ -254,10 +256,10 @@ TCODFOV_Error TCODFOV_map_compute_fov_restrictive_shadowcasting(
     return TCODFOV_E_OUT_OF_MEMORY;
   }
   /* compute the 4 quadrants of the map */
-  compute_quadrant(map, pov_x, pov_y, max_radius, light_walls, 1, 1, start_angle, end_angle);
-  compute_quadrant(map, pov_x, pov_y, max_radius, light_walls, 1, -1, start_angle, end_angle);
-  compute_quadrant(map, pov_x, pov_y, max_radius, light_walls, -1, 1, start_angle, end_angle);
-  compute_quadrant(map, pov_x, pov_y, max_radius, light_walls, -1, -1, start_angle, end_angle);
+  compute_quadrant(transparent, fov, pov_x, pov_y, max_radius, light_walls, 1, 1, start_angle, end_angle);
+  compute_quadrant(transparent, fov, pov_x, pov_y, max_radius, light_walls, 1, -1, start_angle, end_angle);
+  compute_quadrant(transparent, fov, pov_x, pov_y, max_radius, light_walls, -1, 1, start_angle, end_angle);
+  compute_quadrant(transparent, fov, pov_x, pov_y, max_radius, light_walls, -1, -1, start_angle, end_angle);
 
   free(end_angle);
   free(start_angle);

@@ -40,6 +40,8 @@
 
 #include "fov.h"
 #include "libtcod_int.h"
+#include "map_inline.h"
+#include "map_types.h"
 /**
     Quadrant transformation matrixes.
 
@@ -91,12 +93,12 @@ static int round_half_down(float n) { return (int)roundf(n * (1 - FLT_EPSILON));
 
     If you think of each quadrant as a tree of rows, this essentially is a depth-first tree traversal.
  */
-static void scan(TCODFOV_Map* __restrict map, Row* __restrict row) {
+static void scan(const TCODFOV_Map2D* __restrict transparent, TCODFOV_Map2D* __restrict fov, Row* __restrict row) {
   const int xx = quadrant_table[row->quadrant][0];
   const int xy = quadrant_table[row->quadrant][1];
   const int yx = quadrant_table[row->quadrant][2];
   const int yy = quadrant_table[row->quadrant][3];
-  if (!TCODFOV_map_in_bounds(map, row->pov_x + row->depth * xx, row->pov_y + row->depth * yx)) {
+  if (!TCODFOV_map2d_in_bounds(fov, row->pov_x + row->depth * xx, row->pov_y + row->depth * yx)) {
     return;  // Row->depth is out-of-bounds.
   }
   const int column_min = round_half_up(row->depth * row->slope_low);
@@ -105,13 +107,12 @@ static void scan(TCODFOV_Map* __restrict map, Row* __restrict row) {
   for (int column = column_min; column <= column_max; ++column) {
     const int map_x = row->pov_x + row->depth * xx + column * xy;
     const int map_y = row->pov_y + row->depth * yx + column * yy;
-    if (!TCODFOV_map_in_bounds(map, map_x, map_y)) {
+    if (!TCODFOV_map2d_in_bounds(fov, map_x, map_y)) {
       continue;  // Tile is out-of-bounds.
     }
-    struct TCODFOV_MapCell* map_cell = &map->cells[map_x + map_y * map->width];
-    const bool is_wall = !map_cell->transparent;
+    const bool is_wall = !TCODFOV_map2d_get_bool(transparent, map_x, map_y);
     if (is_wall || is_symmetric(row, column)) {
-      map_cell->fov = true;
+      TCODFOV_map2d_set_bool(fov, map_x, map_y, true);
     }
     if (prev_tile_is_wall && !is_wall) {  // Floor tile to wall tile.
       row->slope_low = slope(row->depth, column);  // Shrink the view.
@@ -126,28 +127,37 @@ static void scan(TCODFOV_Map* __restrict map, Row* __restrict row) {
           .slope_low = row->slope_low,
           .slope_high = slope(row->depth, column),
       };
-      scan(map, &next_row);
+      scan(transparent, fov, &next_row);
     }
     prev_tile_is_wall = is_wall;
   }
   if (!prev_tile_is_wall) {
     // Tail recuse into the next row.
     row->depth += 1;
-    scan(map, row);
+    scan(transparent, fov, row);
   }
 }
 
 TCODFOV_Error TCODFOV_map_compute_fov_symmetric_shadowcast(
-    TCODFOV_Map* __restrict map, int pov_x, int pov_y, int max_radius, bool light_walls) {
-  if (!map) {
-    TCODFOV_set_errorv("Map must not be NULL.");
+    const TCODFOV_Map2D* __restrict transparent,
+    TCODFOV_Map2D* __restrict fov,
+    int pov_x,
+    int pov_y,
+    int max_radius,
+    bool light_walls) {
+  if (!transparent) {
+    TCODFOV_set_errorv("Input map must not be NULL.");
     return TCODFOV_E_INVALID_ARGUMENT;
   }
-  if (!TCODFOV_map_in_bounds(map, pov_x, pov_y)) {
+  if (!fov) {
+    TCODFOV_set_errorv("Output map must not be NULL.");
+    return TCODFOV_E_INVALID_ARGUMENT;
+  }
+  if (!TCODFOV_map2d_in_bounds(fov, pov_x, pov_y)) {
     TCODFOV_set_errorvf("Point of view {%i, %i} is out of bounds.", pov_x, pov_y);
     return TCODFOV_E_INVALID_ARGUMENT;
   }
-  map->cells[pov_x + pov_y * map->width].fov = true;
+  TCODFOV_map2d_set_bool(fov, pov_x, pov_y, true);
   for (int quadrant = 0; quadrant < 4; ++quadrant) {
     Row row = {
         .pov_x = pov_x,
@@ -157,20 +167,19 @@ TCODFOV_Error TCODFOV_map_compute_fov_symmetric_shadowcast(
         .slope_low = -1.0f,
         .slope_high = 1.0f,
     };
-    scan(map, &row);
+    scan(transparent, fov, &row);
   }
   const int radius_squared = max_radius * max_radius;
-  for (int y = 0; y < map->height; ++y) {
-    for (int x = 0; x < map->width; ++x) {
-      int i = x + y * map->width;
-      if (!light_walls && !map->cells[i].transparent) {
-        map->cells[i].fov = false;
+  for (int y = 0; y < TCODFOV_map2d_get_height(fov); ++y) {
+    for (int x = 0; x < TCODFOV_map2d_get_width(fov); ++x) {
+      if (!light_walls && !TCODFOV_map2d_get_bool(transparent, x, y)) {
+        TCODFOV_map2d_set_bool(fov, x, y, false);
       }
       if (max_radius > 0) {
         const int dx = x - pov_x;
         const int dy = y - pov_y;
         if (dx * dx + dy * dy >= radius_squared) {
-          map->cells[i].fov = false;
+          TCODFOV_map2d_set_bool(fov, x, y, false);
         }
       }
     }

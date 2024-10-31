@@ -35,6 +35,8 @@
 
 #include "fov.h"
 #include "libtcod_int.h"
+#include "map_inline.h"
+#include "map_types.h"
 #include "utility.h"
 /**
     A discrete diamond raycast tile.
@@ -58,24 +60,25 @@ static int ray_length_sq(const RaycastTile* __restrict ray) {
 /**
     The diamond raycast state.
  */
-typedef struct DiamondFov {
-  TCODFOV_Map* __restrict const map;
+typedef struct DiamondFovState {
+  const TCODFOV_Map2D* __restrict transparent;
+  TCODFOV_Map2D* __restrict fov;
   const int pov_x, pov_y;  // Fov origin point, the POV.
   RaycastTile* __restrict const raymap_grid;  // Grid of temporary rays.
   RaycastTile* perimeter_last;  // Pointer to the last tile on the perimeter.
-} DiamondFov;
+} DiamondFovState;
 /**
     Return a pointer to the tile belonging relative to the POV.
 
     Returns NULL if the tile would be out-of-bounds.
  */
-static RaycastTile* get_ray(DiamondFov* __restrict fov, int relative_x, int relative_y) {
-  const int x = fov->pov_x + relative_x;
-  const int y = fov->pov_y + relative_y;
-  if (!TCODFOV_map_in_bounds(fov->map, x, y)) {
+static RaycastTile* get_ray(DiamondFovState* __restrict state, int relative_x, int relative_y) {
+  const int x = state->pov_x + relative_x;
+  const int y = state->pov_y + relative_y;
+  if (!TCODFOV_map2d_in_bounds(state->fov, x, y)) {
     return NULL;
   }
-  RaycastTile* ray = &fov->raymap_grid[x + (y * fov->map->width)];
+  RaycastTile* ray = &state->raymap_grid[y * TCODFOV_map2d_get_width(state->fov) + x];
   ray->x_relative = relative_x;
   ray->y_relative = relative_y;
   return ray;
@@ -85,7 +88,8 @@ static RaycastTile* get_ray(DiamondFov* __restrict fov, int relative_x, int rela
 
     `input_ray` is the source tile for `new_ray`.
  */
-static void process_ray(DiamondFov* fov, RaycastTile* __restrict new_ray, const RaycastTile* __restrict input_ray) {
+static void process_ray(
+    DiamondFovState* state, RaycastTile* __restrict new_ray, const RaycastTile* __restrict input_ray) {
   if (!new_ray) {
     return;
   }
@@ -96,8 +100,8 @@ static void process_ray(DiamondFov* fov, RaycastTile* __restrict new_ray, const 
   }
   if (!new_ray->touched) {
     // Add this new tile to the perimeter.
-    fov->perimeter_last->perimeter_next = new_ray;
-    fov->perimeter_last = new_ray;
+    state->perimeter_last->perimeter_next = new_ray;
+    state->perimeter_last = new_ray;
     new_ray->touched = true;
   }
 }
@@ -145,11 +149,9 @@ static void process_y_input(RaycastTile* __restrict new_ray, const RaycastTile* 
 /**
     Combine this rays source tiles to tell how obscured `ray` is.
  */
-static void merge_input(const DiamondFov* __restrict fov, RaycastTile* __restrict ray) {
-  const TCODFOV_Map* map = fov->map;
-  const int x = ray->x_relative + fov->pov_x;
-  const int y = ray->y_relative + fov->pov_y;
-  const int ray_index = x + y * map->width;
+static void merge_input(const DiamondFovState* __restrict state, RaycastTile* __restrict ray) {
+  const int x = ray->x_relative + state->pov_x;
+  const int y = ray->y_relative + state->pov_y;
 
   if (ray->x_input) {
     process_x_input(ray, ray->x_input);
@@ -168,7 +170,7 @@ static void merge_input(const DiamondFov* __restrict fov, RaycastTile* __restric
   } else if (is_obscured(ray->x_input) && is_obscured(ray->y_input)) {
     ray->ignore = true;
   }
-  if (!ray->ignore && !map->cells[ray_index].transparent) {
+  if (!ray->ignore && !TCODFOV_map2d_get_bool(state->transparent, x, y)) {
     ray->x_error = ray->x_obscurity = ABS(ray->x_relative);
     ray->y_error = ray->y_obscurity = ABS(ray->y_relative);
   }
@@ -176,58 +178,64 @@ static void merge_input(const DiamondFov* __restrict fov, RaycastTile* __restric
 /**
     Expand the perimeter outwards from this tile.
  */
-static void expand_perimeter_from(DiamondFov* __restrict fov, const RaycastTile* __restrict ray) {
+static void expand_perimeter_from(DiamondFovState* __restrict state, const RaycastTile* __restrict ray) {
   if (ray->ignore) {
     return;  // This tile was excluded from the perimeter.
   }
   if (ray->x_relative >= 0) {
-    process_ray(fov, get_ray(fov, ray->x_relative + 1, ray->y_relative), ray);
+    process_ray(state, get_ray(state, ray->x_relative + 1, ray->y_relative), ray);
   }
   if (ray->x_relative <= 0) {
-    process_ray(fov, get_ray(fov, ray->x_relative - 1, ray->y_relative), ray);
+    process_ray(state, get_ray(state, ray->x_relative - 1, ray->y_relative), ray);
   }
   if (ray->y_relative >= 0) {
-    process_ray(fov, get_ray(fov, ray->x_relative, ray->y_relative + 1), ray);
+    process_ray(state, get_ray(state, ray->x_relative, ray->y_relative + 1), ray);
   }
   if (ray->y_relative <= 0) {
-    process_ray(fov, get_ray(fov, ray->x_relative, ray->y_relative - 1), ray);
+    process_ray(state, get_ray(state, ray->x_relative, ray->y_relative - 1), ray);
   }
 }
 TCODFOV_Error TCODFOV_map_compute_fov_diamond_raycasting(
-    TCODFOV_Map* __restrict map, int pov_x, int pov_y, int max_radius, bool light_walls) {
+    const TCODFOV_Map2D* __restrict transparent,
+    TCODFOV_Map2D* __restrict fov,
+    int pov_x,
+    int pov_y,
+    int max_radius,
+    bool light_walls) {
   const int radius_squared = max_radius * max_radius;
 
-  if (!TCODFOV_map_in_bounds(map, pov_x, pov_y)) {
+  if (!TCODFOV_map2d_in_bounds(fov, pov_x, pov_y)) {
     TCODFOV_set_errorvf("Point of view {%i, %i} is out of bounds.", pov_x, pov_y);
     return TCODFOV_E_INVALID_ARGUMENT;
   }
-  map->cells[pov_x + pov_y * map->width].fov = true;
+  TCODFOV_map2d_set_bool(fov, pov_x, pov_y, true);
 
-  DiamondFov fov = {
-      .map = map,
+  DiamondFovState state = {
+      .transparent = transparent,
+      .fov = fov,
       .pov_x = pov_x,
       .pov_y = pov_y,
-      .raymap_grid = calloc(map->nbcells, sizeof(*fov.raymap_grid)),
+      .raymap_grid = calloc(TCODFOV_map2d_get_width(fov) * TCODFOV_map2d_get_height(fov), sizeof(*state.raymap_grid)),
   };
 
-  if (!fov.raymap_grid) {
+  if (!state.raymap_grid) {
     TCODFOV_set_errorv("Out of memory.");
     return TCODFOV_E_OUT_OF_MEMORY;
   }
 
   // Add the origin ray tile to start the process.
-  RaycastTile* current_ray = fov.perimeter_last = get_ray(&fov, 0, 0);
+  RaycastTile* current_ray = state.perimeter_last = get_ray(&state, 0, 0);
   current_ray->touched = true;
-  expand_perimeter_from(&fov, current_ray);
+  expand_perimeter_from(&state, current_ray);
 
   // Iterative over the diamond perimeter.
   while ((current_ray = current_ray->perimeter_next) != NULL) {
     if (radius_squared <= 0 || ray_length_sq(current_ray) <= radius_squared) {
-      merge_input(&fov, current_ray);
+      merge_input(&state, current_ray);
     } else {
       current_ray->ignore = true;  // Mark out-of-range tiles as ignored.
     }
-    expand_perimeter_from(&fov, current_ray);
+    expand_perimeter_from(&state, current_ray);
 
     // Check if this tile is visible.
     // current_ray->touched is true.
@@ -242,11 +250,11 @@ TCODFOV_Error TCODFOV_map_compute_fov_diamond_raycasting(
     }
     const int map_x = pov_x + current_ray->x_relative;
     const int map_y = pov_y + current_ray->y_relative;
-    map->cells[map_x + map_y * map->width].fov = true;
+    TCODFOV_map2d_set_bool(fov, map_x, map_y, true);
   }
-  free(fov.raymap_grid);
+  free(state.raymap_grid);
   if (light_walls) {
-    TCODFOV_map_postprocess(map, pov_x, pov_y, max_radius);
+    TCODFOV_map_postprocess(transparent, fov, pov_x, pov_y, max_radius);
   }
   return TCODFOV_E_OK;
 }

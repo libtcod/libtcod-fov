@@ -34,7 +34,10 @@
 
 #include "fov.h"
 #include "libtcod_int.h"
+#include "map_inline.h"
+#include "map_types.h"
 #include "utility.h"
+
 struct TCODFOV_Map* TCODFOV_map_new(int width, int height) {
   if (width <= 0 || height <= 0) {
     return NULL;
@@ -99,32 +102,35 @@ void TCODFOV_map_delete(struct TCODFOV_Map* map) {
     `dx`, `dy` is the cast direction.
  */
 static void TCODFOV_map_postprocess_quadrant(
-    TCODFOV_Map* __restrict map, int x0, int y0, int x1, int y1, int dx, int dy) {
+    const TCODFOV_Map2D* __restrict transparent,
+    TCODFOV_Map2D* __restrict fov,
+    int x0,
+    int y0,
+    int x1,
+    int y1,
+    int dx,
+    int dy) {
   if (abs(dx) != 1 || abs(dy) != 1) {
     return;  // Bad parameters.
   }
-  for (int cx = x0; cx <= x1; cx++) {
-    for (int cy = y0; cy <= y1; cy++) {
+  for (int cy = y0; cy <= y1; cy++) {
+    for (int cx = x0; cx <= x1; cx++) {
       const int x2 = cx + dx;
       const int y2 = cy + dy;
-      const int offset = cx + cy * map->width;
-      if (offset < map->nbcells && map->cells[offset].fov == 1 && map->cells[offset].transparent) {
+      if (TCODFOV_map2d_get_bool(fov, cx, cy) && TCODFOV_map2d_get_bool(transparent, cx, cy)) {
         if (x2 >= x0 && x2 <= x1) {
-          const int offset2 = x2 + cy * map->width;
-          if (offset2 < map->nbcells && !map->cells[offset2].transparent) {
-            map->cells[offset2].fov = 1;
+          if (TCODFOV_map2d_in_bounds(fov, x2, cy) && !TCODFOV_map2d_get_bool(transparent, x2, cy)) {
+            TCODFOV_map2d_set_bool(fov, x2, cy, true);
           }
         }
         if (y2 >= y0 && y2 <= y1) {
-          const int offset2 = cx + y2 * map->width;
-          if (offset2 < map->nbcells && !map->cells[offset2].transparent) {
-            map->cells[offset2].fov = 1;
+          if (TCODFOV_map2d_in_bounds(fov, cx, y2) && !TCODFOV_map2d_get_bool(transparent, cx, y2)) {
+            TCODFOV_map2d_set_bool(fov, cx, y2, true);
           }
         }
         if (x2 >= x0 && x2 <= x1 && y2 >= y0 && y2 <= y1) {
-          const int offset2 = x2 + y2 * map->width;
-          if (offset2 < map->nbcells && !map->cells[offset2].transparent) {
-            map->cells[offset2].fov = 1;
+          if (TCODFOV_map2d_in_bounds(fov, x2, y2) && !TCODFOV_map2d_get_bool(transparent, x2, y2)) {
+            TCODFOV_map2d_set_bool(fov, x2, y2, true);
           }
         }
       }
@@ -134,21 +140,22 @@ static void TCODFOV_map_postprocess_quadrant(
 /**
     Spread lighting to walls to avoid lighting artifacts.
  */
-TCODFOV_Error TCODFOV_map_postprocess(TCODFOV_Map* __restrict map, int pov_x, int pov_y, int radius) {
+TCODFOV_Error TCODFOV_map_postprocess(
+    const TCODFOV_Map2D* __restrict transparent, TCODFOV_Map2D* __restrict fov, int pov_x, int pov_y, int radius) {
   int x_min = 0;
   int y_min = 0;
-  int x_max = map->width;
-  int y_max = map->height;
+  int x_max = TCODFOV_map2d_get_width(fov);
+  int y_max = TCODFOV_map2d_get_height(fov);
   if (radius > 0) {
     x_min = MAX(x_min, pov_x - radius);
     y_min = MAX(y_min, pov_y - radius);
     x_max = MIN(x_max, pov_x + radius + 1);
     y_max = MIN(y_max, pov_y + radius + 1);
   }
-  TCODFOV_map_postprocess_quadrant(map, x_min, y_min, pov_x, pov_y, -1, -1);
-  TCODFOV_map_postprocess_quadrant(map, pov_x, y_min, x_max - 1, pov_y, 1, -1);
-  TCODFOV_map_postprocess_quadrant(map, x_min, pov_y, pov_x, y_max - 1, -1, 1);
-  TCODFOV_map_postprocess_quadrant(map, pov_x, pov_y, x_max - 1, y_max - 1, 1, 1);
+  TCODFOV_map_postprocess_quadrant(transparent, fov, x_min, y_min, pov_x, pov_y, -1, -1);
+  TCODFOV_map_postprocess_quadrant(transparent, fov, pov_x, y_min, x_max - 1, pov_y, 1, -1);
+  TCODFOV_map_postprocess_quadrant(transparent, fov, x_min, pov_y, pov_x, y_max - 1, -1, 1);
+  TCODFOV_map_postprocess_quadrant(transparent, fov, pov_x, pov_y, x_max - 1, y_max - 1, 1, 1);
   return TCODFOV_E_OK;
 }
 /**
@@ -178,13 +185,15 @@ TCODFOV_Error TCODFOV_map_compute_fov(
     return TCODFOV_E_INVALID_ARGUMENT;
   }
   TCODFOV_map_clear_fov(map);
+  const TCODFOV_Map2D transparent = {.deprecated_map = {.type = TCODFOV_MAP2D_DEPRECATED, .map = *map, .select = 0}};
+  TCODFOV_Map2D fov = {.deprecated_map = {.type = TCODFOV_MAP2D_DEPRECATED, .map = *map, .select = 2}};
   switch (algo) {
     case TCODFOV_BASIC:
-      return TCODFOV_map_compute_fov_circular_raycasting(map, pov_x, pov_y, max_radius, light_walls);
+      return TCODFOV_map_compute_fov_circular_raycasting(&transparent, &fov, pov_x, pov_y, max_radius, light_walls);
     case TCODFOV_DIAMOND:
-      return TCODFOV_map_compute_fov_diamond_raycasting(map, pov_x, pov_y, max_radius, light_walls);
+      return TCODFOV_map_compute_fov_diamond_raycasting(&transparent, &fov, pov_x, pov_y, max_radius, light_walls);
     case TCODFOV_SHADOW:
-      return TCODFOV_map_compute_fov_recursive_shadowcasting(map, pov_x, pov_y, max_radius, light_walls);
+      return TCODFOV_map_compute_fov_recursive_shadowcasting(&transparent, &fov, pov_x, pov_y, max_radius, light_walls);
     case TCODFOV_PERMISSIVE_0:
     case TCODFOV_PERMISSIVE_1:
     case TCODFOV_PERMISSIVE_2:
@@ -195,11 +204,12 @@ TCODFOV_Error TCODFOV_map_compute_fov(
     case TCODFOV_PERMISSIVE_7:
     case TCODFOV_PERMISSIVE_8:
       return TCODFOV_map_compute_fov_permissive2(
-          map, pov_x, pov_y, max_radius, light_walls, algo - TCODFOV_PERMISSIVE_0);
+          &transparent, &fov, pov_x, pov_y, max_radius, light_walls, algo - TCODFOV_PERMISSIVE_0);
     case TCODFOV_RESTRICTIVE:
-      return TCODFOV_map_compute_fov_restrictive_shadowcasting(map, pov_x, pov_y, max_radius, light_walls);
+      return TCODFOV_map_compute_fov_restrictive_shadowcasting(
+          &transparent, &fov, pov_x, pov_y, max_radius, light_walls);
     case TCODFOV_SYMMETRIC_SHADOWCAST:
-      return TCODFOV_map_compute_fov_symmetric_shadowcast(map, pov_x, pov_y, max_radius, light_walls);
+      return TCODFOV_map_compute_fov_symmetric_shadowcast(&transparent, &fov, pov_x, pov_y, max_radius, light_walls);
     default:
       return TCODFOV_E_INVALID_ARGUMENT;
   }
