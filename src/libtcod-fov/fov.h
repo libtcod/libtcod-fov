@@ -120,11 +120,11 @@ TCODFOV_PUBLIC int TCODFOV_map_get_height(const TCODFOV_Map* map);
 TCODFOV_PUBLIC int TCODFOV_map_get_nb_cells(const TCODFOV_Map* map);
 #ifdef __cplusplus
 }  // extern "C"
-namespace tcod {
+namespace tcod::fov {
 struct MapDeleter_ {
   void operator()(TCODFOV_Map* map) const { TCODFOV_map_delete(map); }
 };
 typedef std::unique_ptr<struct TCODFOV_Map, MapDeleter_> MapPtr_;
-}  // namespace tcod
+}  // namespace tcod::fov
 #endif  // __cplusplus
 #endif  // TCODFOV_FOV_H_
