@@ -5,9 +5,9 @@ Print the version number for libtcod.
 The --so flag can be used to get the library version number instead.
 """
 
-import io
 import re
 import sys
+from pathlib import Path
 
 RE_MAJOR = ".*#define TCODFOV_MAJOR_VERSION *([0-9]+)"
 RE_MINOR = ".*#define TCODFOV_MINOR_VERSION *([0-9]+)"
@@ -16,8 +16,7 @@ RE_VERSION = RE_MAJOR + RE_MINOR + RE_PATCH
 
 
 def main():
-    with io.open("../../src/libtcod-fov/version.h", encoding="utf-8") as f:
-        header = f.read()
+    header = Path("../../include/libtcod-fov/version.h").read_text("utf-8")
     major, minor, patch = re.match(RE_VERSION, header, re.DOTALL).groups()
     if "--so" in sys.argv:
         print("{major}:{minor}".format(**locals()))

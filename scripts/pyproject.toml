@@ -10,6 +10,8 @@ ignore = [
     "ANN101", # missing-type-self
     "ANN102", # missing-type-cls
     "T20",    # flake8-print
+    "COM",    # flake8-commas
+    "ISC001", # single-line-implicit-string-concatenation
 ]
 
 [tool.ruff.lint.pydocstyle] # https://docs.astral.sh/ruff/settings/#lintpydocstyle

@@ -211,9 +211,9 @@ jobs:
         wget --no-verbose https://github.com/Felerius/cpp-amalgamate/releases/download/1.0.1/cpp-amalgamate-x86_64-unknown-linux-gnu -O ~/cpp-amalgamate
         chmod +x ~/cpp-amalgamate
     - name: Generate source amalgam
-      run: ~/cpp-amalgamate -v src/libtcod-fov/*.c -o libtcod-fov.c
+      run: ~/cpp-amalgamate -v src/libtcod-fov/*.c --dir-quote include/libtcod-fov --unresolvable-quote-include error -o libtcod-fov.c
     - name: Generate header amalgam
-      run: ~/cpp-amalgamate -v src/libtcod-fov.h -o libtcod-fov.h
+      run: ~/cpp-amalgamate -v include/libtcod-fov.h --unresolvable-quote-include error -o libtcod-fov.h
     - name: Upload amalgams
       uses: actions/upload-artifact@v4
       with:

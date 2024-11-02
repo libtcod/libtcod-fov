@@ -51,7 +51,7 @@ VERSION_SOURCE = """\
 
 def update_version_header(args: argparse.Namespace) -> None:
     """Update version.h to use the given tag."""
-    version_header_path: Final = Path("src/libtcod/version.h")
+    version_header_path: Final = Path("include/libtcod-fov/version.h")
     match = re.match(
         pattern=r"(?P<head>.*?)\n#define TCODFOV_MAJOR_VERSION.*?TCODFOV_STRVERSION[^\n]*\n(?P<tail>.*)",
         string=version_header_path.read_text(encoding="utf-8"),
@@ -136,6 +136,7 @@ def main() -> None:
     update_vcpkg_manifest(args)
 
     replace_unreleased_tags(args.tag, PROJECT_DIR / "src", dry_run=args.dry_run)
+    replace_unreleased_tags(args.tag, PROJECT_DIR / "include", dry_run=args.dry_run)
 
     if not args.dry_run:
         CHANGELOG_PATH.write_text(new_changelog, encoding="utf-8")

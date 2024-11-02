@@ -2,20 +2,18 @@
 
 libtcod_fov_includedir = $(includedir)/libtcod-fov
 libtcod_fov_include_HEADERS = \
-	../../src/libtcod-fov/bresenham.h \
-	../../src/libtcod-fov/bresenham.hpp \
-	../../src/libtcod-fov/config.h \
-	../../src/libtcod-fov/error.h \
-	../../src/libtcod-fov/error.hpp \
-	../../src/libtcod-fov/fov.h \
-	../../src/libtcod-fov/fov.hpp \
-	../../src/libtcod-fov/fov_types.h \
-	../../src/libtcod-fov/libtcod_int.h \
-	../../src/libtcod-fov/logging.h \
-	../../src/libtcod-fov/map_inline.h \
-	../../src/libtcod-fov/map_types.h \
-	../../src/libtcod-fov/utility.h \
-	../../src/libtcod-fov/version.h
+	../../include/libtcod-fov/bresenham.h \
+	../../include/libtcod-fov/bresenham.hpp \
+	../../include/libtcod-fov/config.h \
+	../../include/libtcod-fov/error.h \
+	../../include/libtcod-fov/error.hpp \
+	../../include/libtcod-fov/fov.h \
+	../../include/libtcod-fov/fov.hpp \
+	../../include/libtcod-fov/fov_types.h \
+	../../include/libtcod-fov/logging.h \
+	../../include/libtcod-fov/map_inline.h \
+	../../include/libtcod-fov/map_types.h \
+	../../include/libtcod-fov/version.h
 
 libtcod_fov_la_SOURCES = \
 	../../src/libtcod-fov/bresenham_c.c \

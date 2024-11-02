@@ -1,7 +1,7 @@
 ACLOCAL_AMFLAGS = ${ACLOCAL_FLAGS} -I m4
 
 AM_CFLAGS = \
-	-I$(top_srcdir)/../../src \
+	-I$(top_srcdir)/../../include/libtcod-fov \
 	-fvisibility=hidden \
 	-DTCODFOV_EXPORTS \
 	-DNDEBUG \
@@ -19,7 +19,7 @@ AM_LDFLAGS = $(SDL_LIBS) $(X11_LIBS) $(ZLIB_LIBS) $(SYSLIBS)
 lib_LTLIBRARIES = libtcod-fov.la
 
 libtcod_fov_root_includedir = $(includedir)
-libtcod_fov_root_include_HEADERS = ../../src/libtcod-fov.h
+libtcod_fov_root_include_HEADERS = ../../include/libtcod-fov.h
 
 include $(srcdir)/sources.am
 
