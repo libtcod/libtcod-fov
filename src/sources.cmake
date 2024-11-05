@@ -9,7 +9,6 @@ target_sources(${PROJECT_NAME} PRIVATE
     libtcod-fov/fov_recursive_shadowcasting.c
     libtcod-fov/fov_restrictive.c
     libtcod-fov/fov_symmetric_shadowcast.c
-    libtcod-fov/libtcod_int.h
     libtcod-fov/logging.c
     libtcod-fov/utility.h
 )
@@ -27,7 +26,9 @@ install(FILES
     ../include/libtcod-fov/fov.h
     ../include/libtcod-fov/fov.hpp
     ../include/libtcod-fov/fov_types.h
+    ../include/libtcod-fov/libtcod_int.h
     ../include/libtcod-fov/logging.h
+    ../include/libtcod-fov/map.hpp
     ../include/libtcod-fov/map_inline.h
     ../include/libtcod-fov/map_types.h
     ../include/libtcod-fov/version.h

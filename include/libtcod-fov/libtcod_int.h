@@ -46,28 +46,28 @@ extern "C" {
 #endif
 
 /* fov internal stuff */
-TCODFOV_Error TCODFOV_map_compute_fov_circular_raycasting(
+TCODFOV_PUBLIC TCODFOV_Error TCODFOV_map_compute_fov_circular_raycasting(
     const TCODFOV_Map2D* __restrict transparent,
     TCODFOV_Map2D* __restrict fov,
     int pov_x,
     int pov_y,
     int max_radius,
     bool light_walls);
-TCODFOV_Error TCODFOV_map_compute_fov_diamond_raycasting(
+TCODFOV_PUBLIC TCODFOV_Error TCODFOV_map_compute_fov_diamond_raycasting(
     const TCODFOV_Map2D* __restrict transparent,
     TCODFOV_Map2D* __restrict fov,
     int pov_x,
     int pov_y,
     int max_radius,
     bool light_walls);
-TCODFOV_Error TCODFOV_map_compute_fov_recursive_shadowcasting(
+TCODFOV_PUBLIC TCODFOV_Error TCODFOV_map_compute_fov_recursive_shadowcasting(
     const TCODFOV_Map2D* __restrict transparent,
     TCODFOV_Map2D* __restrict fov,
     int pov_x,
     int pov_y,
     int max_radius,
     bool light_walls);
-TCODFOV_Error TCODFOV_map_compute_fov_permissive2(
+TCODFOV_PUBLIC TCODFOV_Error TCODFOV_map_compute_fov_permissive2(
     const TCODFOV_Map2D* __restrict transparent,
     TCODFOV_Map2D* __restrict fov,
     int pov_x,
@@ -75,21 +75,21 @@ TCODFOV_Error TCODFOV_map_compute_fov_permissive2(
     int max_radius,
     bool light_walls,
     int permissiveness);
-TCODFOV_Error TCODFOV_map_compute_fov_restrictive_shadowcasting(
+TCODFOV_PUBLIC TCODFOV_Error TCODFOV_map_compute_fov_restrictive_shadowcasting(
     const TCODFOV_Map2D* __restrict transparent,
     TCODFOV_Map2D* __restrict fov,
     int pov_x,
     int pov_y,
     int max_radius,
     bool light_walls);
-TCODFOV_Error TCODFOV_map_compute_fov_symmetric_shadowcast(
+TCODFOV_PUBLIC TCODFOV_Error TCODFOV_map_compute_fov_symmetric_shadowcast(
     const TCODFOV_Map2D* __restrict transparent,
     TCODFOV_Map2D* __restrict fov,
     int pov_x,
     int pov_y,
     int max_radius,
     bool light_walls);
-TCODFOV_Error TCODFOV_map_postprocess(
+TCODFOV_PUBLIC TCODFOV_Error TCODFOV_map_postprocess(
     const TCODFOV_Map2D* __restrict transparent, TCODFOV_Map2D* __restrict fov, int pov_x, int pov_y, int radius);
 /**
     Return true if `x` and `y` are in the boundaries of `map`.

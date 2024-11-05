@@ -10,7 +10,9 @@ libtcod_fov_include_HEADERS = \
 	../../include/libtcod-fov/fov.h \
 	../../include/libtcod-fov/fov.hpp \
 	../../include/libtcod-fov/fov_types.h \
+	../../include/libtcod-fov/libtcod_int.h \
 	../../include/libtcod-fov/logging.h \
+	../../include/libtcod-fov/map.hpp \
 	../../include/libtcod-fov/map_inline.h \
 	../../include/libtcod-fov/map_types.h \
 	../../include/libtcod-fov/version.h

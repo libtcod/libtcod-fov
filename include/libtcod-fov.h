@@ -37,12 +37,14 @@
 #include "libtcod-fov/error.h"
 #include "libtcod-fov/fov.h"
 #include "libtcod-fov/logging.h"
+#include "libtcod-fov/map_inline.h"
 #include "libtcod-fov/map_types.h"
 #include "libtcod-fov/version.h"
 
 #ifdef __cplusplus
 #include "libtcod-fov/bresenham.hpp"
 #include "libtcod-fov/fov.hpp"
+#include "libtcod-fov/map.hpp"
 #endif  // __cplusplus
 
 #endif  // TCODFOV_H_
