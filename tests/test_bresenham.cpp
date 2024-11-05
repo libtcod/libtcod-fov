@@ -22,7 +22,7 @@ std::vector<std::array<int, 2>> generate_line(const std::array<int, 2>& begin, c
 }
 
 /** Dummy callback for older bresenham functions. */
-bool null_bresenham_callback(int x, int y) { return true; }
+bool null_bresenham_callback([[maybe_unused]] int x, [[maybe_unused]] int y) { return true; }
 
 TEST_CASE("TCODFOV_line_step_mt") {
   const std::vector<std::array<int, 2>> EXPECTED = {
