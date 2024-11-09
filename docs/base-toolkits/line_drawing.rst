@@ -43,10 +43,3 @@ Callback-based line drawing
 
 .. doxygenclass:: tcod::BresenhamLine
     :members:
-
-Deprecated functions
-^^^^^^^^^^^^^^^^^^^^
-
-.. doxygenfunction:: TCODFOV_line_mt
-.. doxygenfunction:: TCODFOV_line_init
-.. doxygenfunction:: TCODFOV_line_step

@@ -34,8 +34,6 @@
  *  \file bresenham_c.c
  *  \brief bresenham line drawing
  */
-/* This static variable is deprecated since 1.6 */
-static TCODFOV_bresenham_data_t bresenham_data;
 /**
  *  \brief Initialize a TCODFOV_bresenham_data_t struct.
  *
@@ -118,70 +116,6 @@ bool TCODFOV_line_step_mt(int* __restrict xCur, int* __restrict yCur, TCODFOV_br
  *  \param xd The destination x position.
  *  \param yd The destination y position.
  *  \param listener A TCODFOV_line_listener_t callback.
- *  \param data Pointer to a TCODFOV_bresenham_data_t struct.
- *  \return true if the line was completely exhausted by the callback.
- *
- *  \verbatim embed:rst:leading-asterisk
- *  .. deprecated:: 1.6.6
- *    The `data` parameter for this call is redundant, you should call
- *    :any:`TCODFOV_line` instead.
- *  \endverbatim
- */
-bool TCODFOV_line_mt(int xo, int yo, int xd, int yd, TCODFOV_line_listener_t listener, TCODFOV_bresenham_data_t* data) {
-  TCODFOV_line_init_mt(xo, yo, xd, yd, data);
-  do {
-    if (!listener(xo, yo)) return false;
-  } while (!TCODFOV_line_step_mt(&xo, &yo, data));
-  return true;
-}
-/**
- *  \brief Initialize a line using a global state.
- *
- *  \param xFrom The starting x position.
- *  \param yFrom The starting y position.
- *  \param xTo The ending x position.
- *  \param yTo The ending y position.
- *
- *  \verbatim embed:rst:leading-asterisk
- *  .. deprecated:: 1.6.6
- *    This function is not reentrant and will fail if a new line is started
- *    before the last is finished processing.
- *
- *    Use :any:`TCODFOV_line_init_mt` instead.
- *  \endverbatim
- */
-void TCODFOV_line_init(int xFrom, int yFrom, int xTo, int yTo) {
-  TCODFOV_line_init_mt(xFrom, yFrom, xTo, yTo, &bresenham_data);
-}
-/**
- *  \brief Get the next point in a line, returns true once the line has ended.
- *
- *  \param xCur An int pointer to fill with the next x position.
- *  \param yCur An int pointer to fill with the next y position.
- *  \return true once the ending point has been reached.
- *
- *  The starting point is excluded by this function.
- *  After the ending point is reached, the next call will return true.
- *
- *  \verbatim embed:rst:leading-asterisk
- *  .. deprecated:: 1.6.6
- *    This function is not reentrant and will fail if a new line is started
- *    before the last is finished processing.
- *
- *    Use :any:`TCODFOV_line_step_mt` instead.
- *  \endverbatim
- */
-bool TCODFOV_line_step(int* __restrict xCur, int* __restrict yCur) {
-  return TCODFOV_line_step_mt(xCur, yCur, &bresenham_data);
-}
-/**
- *  \brief Iterate over a line using a callback.
- *
- *  \param xo The origin x position.
- *  \param yo The origin y position.
- *  \param xd The destination x position.
- *  \param yd The destination y position.
- *  \param listener A TCODFOV_line_listener_t callback.
  *  \return true if the line was completely exhausted by the callback.
  *
  *  \verbatim embed:rst:leading-asterisk
@@ -191,5 +125,9 @@ bool TCODFOV_line_step(int* __restrict xCur, int* __restrict yCur) {
  */
 bool TCODFOV_line(int xo, int yo, int xd, int yd, TCODFOV_line_listener_t listener) {
   TCODFOV_bresenham_data_t data;
-  return TCODFOV_line_mt(xo, yo, xd, yd, listener, &data);
+  TCODFOV_line_init_mt(xo, yo, xd, yd, &data);
+  do {
+    if (!listener(xo, yo)) return false;
+  } while (!TCODFOV_line_step_mt(&xo, &yo, &data));
+  return true;
 }
