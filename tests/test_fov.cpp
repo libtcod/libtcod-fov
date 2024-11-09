@@ -17,7 +17,7 @@
 
 struct MapInfo {
   std::string name{};
-  tcod::fov::Map2DPtr data{};  // Map tile data
+  tcod::fov::Bitpacked2D data{};  // Map tile data
   std::tuple<int, int> pov{0, 0};
 };
 
@@ -36,7 +36,7 @@ static auto load_map(std::string name, const std::filesystem::path& path) {
       std::ranges::max(lines | std::views::transform([](const auto& line) { return gsl::narrow<int>(line.size()); }));
   auto map = MapInfo{
       .name = std::move(name),
-      .data = tcod::fov::Map2DPtr{TCODFOV_map2d_new_bitpacked(map_width, map_height)},
+      .data = tcod::fov::Bitpacked2D{{map_height, map_width}},
   };
   for (int y = 0; y < gsl::narrow<int>(lines.size()); ++y) {
     const auto& line = lines.at(y);
@@ -44,7 +44,7 @@ static auto load_map(std::string name, const std::filesystem::path& path) {
       static constexpr auto DEFAULT_CH = '.';
       const auto ch = (x < gsl::narrow<int>(line.size()) ? line.at(x) : DEFAULT_CH);
       const bool transparent = ch != '#';
-      TCODFOV_map2d_set_bool(map.data.get(), x, y, transparent);
+      map.data.set_bool({y, x}, transparent);
       if (ch == '@') {
         map.pov = {x, y};
       }
@@ -53,36 +53,27 @@ static auto load_map(std::string name, const std::filesystem::path& path) {
   return map;
 }
 
-static auto new_map_with_radius(int radius, bool start_transparent) -> tcod::fov::Map2DPtr {
+static auto new_map_with_radius(int radius, bool start_transparent) -> tcod::fov::Bitpacked2D {
   const int size = radius * 2 + 1;
-  tcod::fov::Map2DPtr map{TCODFOV_map2d_new_bitpacked(size, size)};
-  for (int y = 0; y < TCODFOV_map2d_get_height(map.get()); ++y) {
-    for (int x = 0; x < TCODFOV_map2d_get_height(map.get()); ++x) {
-      TCODFOV_map2d_set_bool(map.get(), x, y, start_transparent);
-    }
-  }
+  tcod::fov::Bitpacked2D map{{size, size}, start_transparent};
   return map;
 }
-static auto new_empty_map(int radius) -> tcod::fov::Map2DPtr { return new_map_with_radius(radius, true); }
-static auto new_opaque_map(int radius) -> tcod::fov::Map2DPtr { return new_map_with_radius(radius, false); }
-static auto new_corridor_map(int radius) -> tcod::fov::Map2DPtr {
-  tcod::fov::Map2DPtr map{new_map_with_radius(radius, false)};
+static auto new_empty_map(int radius) -> tcod::fov::Bitpacked2D { return new_map_with_radius(radius, true); }
+static auto new_opaque_map(int radius) -> tcod::fov::Bitpacked2D { return new_map_with_radius(radius, false); }
+static auto new_corridor_map(int radius) -> tcod::fov::Bitpacked2D {
+  tcod::fov::Bitpacked2D map{new_map_with_radius(radius, false)};
   for (int i = 0; i < radius * 2 + 1; ++i) {
-    TCODFOV_map2d_set_bool(map.get(), radius, i, true);
-    TCODFOV_map2d_set_bool(map.get(), i, radius, true);
+    map.set_bool({i, radius}, true);
+    map.set_bool({radius, i}, true);
   }
   return map;
 }
-static auto new_forest_map(int radius) -> tcod::fov::Map2DPtr {
+static auto new_forest_map(int radius) -> tcod::fov::Bitpacked2D {
   // Forest map with 1 in 4 chance of a blocking tile.
   std::mt19937 rng(0);
   std::uniform_int_distribution<int> chance(0, 3);
-  tcod::fov::Map2DPtr map{new_map_with_radius(radius, true)};
-  for (int y = 0; y < TCODFOV_map2d_get_height(map.get()); ++y) {
-    for (int x = 0; x < TCODFOV_map2d_get_height(map.get()); ++x) {
-      if (chance(rng) == 0) TCODFOV_map2d_set_bool(map.get(), x, y, false);
-    }
-  }
+  tcod::fov::Bitpacked2D map{new_map_with_radius(radius, true)};
+  for (auto& it : map) it = (chance(rng) == 0);
   return map;
 }
 
@@ -110,27 +101,26 @@ TEST_CASE("FOV Benchmarks", "[.benchmark]") {
   };
   for (auto& active_test : test_maps) {
     const std::string& map_name = active_test.name;
-    tcod::fov::Map2DPtr& map = active_test.data;
-    tcod::fov::Map2DPtr out = tcod::fov::Map2DPtr{
-        TCODFOV_map2d_new_bitpacked(TCODFOV_map2d_get_width(map.get()), TCODFOV_map2d_get_height(map.get()))};
+    const auto& map = active_test.data;
+    auto out = tcod::fov::Bitpacked2D{map.get_shape()};
     const auto [pov_x, pov_y] = active_test.pov;
     BENCHMARK(map_name + " TCODFOV_BASIC") {
-      (void)!TCODFOV_map_compute_fov_circular_raycasting(map.get(), out.get(), pov_x, pov_y, 0, true);
+      (void)!TCODFOV_map_compute_fov_circular_raycasting(map.get_ptr(), out.get_ptr(), pov_x, pov_y, 0, true);
     };
     BENCHMARK(map_name + " TCODFOV_DIAMOND") {
-      (void)!TCODFOV_map_compute_fov_diamond_raycasting(map.get(), out.get(), pov_x, pov_y, 0, true);
+      (void)!TCODFOV_map_compute_fov_diamond_raycasting(map.get_ptr(), out.get_ptr(), pov_x, pov_y, 0, true);
     };
     BENCHMARK(map_name + " TCODFOV_SHADOW") {
-      (void)!TCODFOV_map_compute_fov_recursive_shadowcasting(map.get(), out.get(), pov_x, pov_y, 0, true);
+      (void)!TCODFOV_map_compute_fov_recursive_shadowcasting(map.get_ptr(), out.get_ptr(), pov_x, pov_y, 0, true);
     };
     BENCHMARK(map_name + " TCODFOV_RESTRICTIVE") {
-      (void)!TCODFOV_map_compute_fov_restrictive_shadowcasting(map.get(), out.get(), pov_x, pov_y, 0, true);
+      (void)!TCODFOV_map_compute_fov_restrictive_shadowcasting(map.get_ptr(), out.get_ptr(), pov_x, pov_y, 0, true);
     };
     BENCHMARK(map_name + " TCODFOV_PERMISSIVE_8") {
-      (void)!TCODFOV_map_compute_fov_permissive2(map.get(), out.get(), pov_x, pov_y, 0, true, 8);
+      (void)!TCODFOV_map_compute_fov_permissive2(map.get_ptr(), out.get_ptr(), pov_x, pov_y, 0, true, 8);
     };
     BENCHMARK(map_name + " TCODFOV_SYMMETRIC_SHADOWCAST") {
-      (void)!TCODFOV_map_compute_fov_symmetric_shadowcast(map.get(), out.get(), pov_x, pov_y, 0, true);
+      (void)!TCODFOV_map_compute_fov_symmetric_shadowcast(map.get_ptr(), out.get_ptr(), pov_x, pov_y, 0, true);
     };
   }
 }

@@ -105,7 +105,9 @@
         "pointers": "cpp",
         "stacktrace": "cpp",
         "assert": "cpp",
-        "narrow": "cpp"
+        "narrow": "cpp",
+        "span_ext": "cpp",
+        "util": "cpp"
     },
     "files.trimFinalNewlines": true,
     "files.insertFinalNewline": true,

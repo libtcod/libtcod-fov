@@ -18,9 +18,11 @@
 #include <string>
 
 #include "libtcod-fov.h"
+#include "libtcod-fov/libtcod_int.h"
 
 struct MapInfo {
-  tcod::fov::TCODMap data;  // Map tile data
+  tcod::fov::Bitpacked2D transparency;  // Map tile data
+  tcod::fov::Bitpacked2D visible;  // Tiles in FOV
   std::vector<std::tuple<int, int>> sources{};  // POV/light sources
 };
 
@@ -41,7 +43,8 @@ static auto load_map(const std::filesystem::path& path) {
   const int map_width =
       std::ranges::max(lines | std::views::transform([](const auto& line) { return gsl::narrow<int>(line.size()); }));
   auto map = MapInfo{
-      .data = {map_width, map_height},
+      .transparency = tcod::fov::Bitpacked2D{{map_height, map_width}},
+      .visible = tcod::fov::Bitpacked2D{{map_height, map_width}},
   };
   for (int y = 0; y < gsl::narrow<int>(lines.size()); ++y) {
     const auto& line = lines.at(y);
@@ -49,7 +52,7 @@ static auto load_map(const std::filesystem::path& path) {
       static constexpr auto DEFAULT_CH = '.';
       const auto ch = (x < gsl::narrow<int>(line.size()) ? line.at(x) : DEFAULT_CH);
       const bool transparent = ch != '#';
-      map.data.setProperties(x, y, transparent, false);
+      map.transparency.set_bool({y, x}, transparent);
       if (ch == '@') {
         map.sources.push_back({x, y});
       }
@@ -60,15 +63,15 @@ static auto load_map(const std::filesystem::path& path) {
 
 static auto render_map(const MapInfo& map) {
   auto stream = std::ostringstream{};
-  for (int y = 0; y < map.data.getHeight(); ++y) {
+  for (int y = 0; y < map.transparency.get_height(); ++y) {
     if (y) stream << '\n';
-    for (int x = 0; x < map.data.getWidth(); ++x) {
+    for (int x = 0; x < map.transparency.get_width(); ++x) {
       if (std::ranges::any_of(map.sources, [=](const auto& xy) { return xy == std::tuple<int, int>{x, y}; })) {
         stream << '@';
         continue;
       }
-      const bool visible = map.data.isInFov(x, y);
-      const bool transparent = map.data.isTransparent(x, y);
+      const bool visible = map.visible.get_bool({y, x});
+      const bool transparent = map.transparency.get_bool({y, x});
       stream << (visible ? (transparent ? '.' : '#') : (transparent ? ' ' : ' '));
     }
   }
@@ -93,7 +96,7 @@ int main(int argc, char** argv) {
   try {
     auto map = load_map(input_str);
     for (const auto& [x, y] : map.sources) {
-      TCODFOV_map_compute_fov(map.data.data, x, y, 0, true, TCODFOV_SYMMETRIC_SHADOWCAST);
+      TCODFOV_map_compute_fov_symmetric_shadowcast(map.transparency.get_ptr(), map.visible.get_ptr(), x, y, 0, true);
       std::cout << render_map(map) << '\n';
     }
   } catch (const std::exception& e) {

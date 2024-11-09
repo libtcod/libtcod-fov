@@ -429,6 +429,7 @@
         "stbds",
         "stbtt",
         "stdbool",
+        "STDEXT",
         "stdint",
         "stepx",
         "stepy",
