@@ -9,6 +9,7 @@ target_sources(${PROJECT_NAME} PRIVATE
     libtcod-fov/fov_recursive_shadowcasting.c
     libtcod-fov/fov_restrictive.c
     libtcod-fov/fov_symmetric_shadowcast.c
+    libtcod-fov/fov_triage.c
     libtcod-fov/logging.c
     libtcod-fov/utility.h
 )
@@ -25,6 +26,7 @@ install(FILES
     ../include/libtcod-fov/error.hpp
     ../include/libtcod-fov/fov.h
     ../include/libtcod-fov/fov.hpp
+    ../include/libtcod-fov/fov_triage.h
     ../include/libtcod-fov/fov_types.h
     ../include/libtcod-fov/libtcod_int.h
     ../include/libtcod-fov/logging.h

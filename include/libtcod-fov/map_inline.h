@@ -141,4 +141,13 @@ static inline void TCODFOV_map2d_set_bool(TCODFOV_Map2D* __restrict map, int x, 
       return;
   }
 }
+
+/// @brief Assign `value` to `{x, y}` on `map`. Out-of-bounds writes are ignored.
+/// @param map Map union pointer, can be NULL.
+/// @param x X coordinate.
+/// @param y Y coordinate.
+/// @param value Assigned value.
+static inline void TCODFOV_map2d_set_int(TCODFOV_Map2D* __restrict map, int x, int y, int value) {
+  TCODFOV_map2d_set_bool(map, x, y, value != 0);  // Fallback until maps can hold integers
+}
 #endif  // TCODFOV_MAP_INLINE_H_

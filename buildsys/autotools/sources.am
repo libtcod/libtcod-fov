@@ -9,6 +9,7 @@ libtcod_fov_include_HEADERS = \
 	../../include/libtcod-fov/error.hpp \
 	../../include/libtcod-fov/fov.h \
 	../../include/libtcod-fov/fov.hpp \
+	../../include/libtcod-fov/fov_triage.h \
 	../../include/libtcod-fov/fov_types.h \
 	../../include/libtcod-fov/libtcod_int.h \
 	../../include/libtcod-fov/logging.h \
@@ -27,4 +28,5 @@ libtcod_fov_la_SOURCES = \
 	../../src/libtcod-fov/fov_recursive_shadowcasting.c \
 	../../src/libtcod-fov/fov_restrictive.c \
 	../../src/libtcod-fov/fov_symmetric_shadowcast.c \
+	../../src/libtcod-fov/fov_triage.c \
 	../../src/libtcod-fov/logging.c

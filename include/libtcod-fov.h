@@ -36,6 +36,7 @@
 #include "libtcod-fov/bresenham.h"
 #include "libtcod-fov/error.h"
 #include "libtcod-fov/fov.h"
+#include "libtcod-fov/fov_triage.h"
 #include "libtcod-fov/logging.h"
 #include "libtcod-fov/map_inline.h"
 #include "libtcod-fov/map_types.h"
