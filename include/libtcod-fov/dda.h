@@ -34,10 +34,24 @@ extern "C" {
 /// @param out_xy // Output array of contigious XY coordinates, if NULL then no data will be written.
 ///     If not NULL then MUST be size `sizeof(int) * 2 * out_n`.
 /// @return The count of indexes needed to reach the end coordinate.
-///     Returns a negative number on errors.
 TCODFOV_PUBLIC ptrdiff_t TCODFOV_dda_compute(
     double begin_x, double begin_y, double end_x, double end_y, ptrdiff_t out_n, int* __restrict out_xy);
 
+/// @brief Compute an orthogonal line using digital differential analyzer and output to an array.
+///
+/// Output includes the beginning coordinates.
+/// Using the returned size will include the ending coordinates.
+/// A smaller buffer will have a truncated output, and a larger buffer will output coordinates past the end.
+/// @param begin_x Starting X coordinate.
+/// @param begin_y Starting Y coordinate.
+/// @param end_x Target X coordinate.
+/// @param end_y Target Y coordinate.
+/// @param out_n // Number of indexes to write to `out_xy`.
+/// @param out_xy // Output array of contigious XY coordinates, if NULL then no data will be written.
+///     If not NULL then MUST be size `sizeof(int) * 2 * out_n`.
+/// @return The count of indexes needed to reach the end coordinate.
+TCODFOV_PUBLIC ptrdiff_t TCODFOV_dda_compute_orthogonal(
+    double begin_x, double begin_y, double end_x, double end_y, ptrdiff_t out_n, int* __restrict out_xy);
 #ifdef __cplusplus
 }  // extern "C"
 #endif  // __cplusplus

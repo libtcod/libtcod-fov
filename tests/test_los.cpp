@@ -42,6 +42,14 @@ std::vector<Point2D> generate_line_dda(const std::array<int, 2>& begin, const st
   return line;
 }
 
+std::vector<Point2D> generate_line_dda_orthogonal(const std::array<int, 2>& begin, const std::array<int, 2>& end) {
+  auto length = TCODFOV_dda_compute_orthogonal(begin.at(0), begin.at(1), end.at(0), end.at(1), 0, nullptr);
+  std::vector<Point2D> line(length);
+  TCODFOV_dda_compute_orthogonal(
+      begin.at(0), begin.at(1), end.at(0), end.at(1), length, reinterpret_cast<int*>(line.data()));
+  return line;
+}
+
 /** Dummy callback for older bresenham functions. */
 bool null_bresenham_callback([[maybe_unused]] int x, [[maybe_unused]] int y) { return true; }
 
@@ -63,6 +71,44 @@ TEST_CASE("TCODFOV_dda_compute") {
   const std::vector<Point2D> EXPECTED2 = {
       {11, 3}, {10, 3}, {9, 2}, {8, 2}, {7, 2}, {6, 2}, {5, 1}, {4, 1}, {3, 1}, {2, 1}, {1, 0}, {0, 0}};
   REQUIRE(generate_line_dda({11, 3}, {0, 0}) == EXPECTED2);
+}
+
+TEST_CASE("TCODFOV_dda_compute_orthogonal") {
+  const std::vector<Point2D> EXPECTED = {
+      {0, 0},
+      {1, 0},
+      {2, 0},
+      {2, 1},
+      {3, 1},
+      {4, 1},
+      {5, 1},
+      {5, 2},
+      {6, 2},
+      {7, 2},
+      {8, 2},
+      {9, 2},
+      {9, 3},
+      {10, 3},
+      {11, 3}};
+  REQUIRE(generate_line_dda_orthogonal({0, 0}, {11, 3}) == EXPECTED);
+
+  const std::vector<Point2D> EXPECTED2 = {
+      {11, 3},
+      {10, 3},
+      {9, 3},
+      {9, 2},
+      {8, 2},
+      {7, 2},
+      {6, 2},
+      {6, 1},
+      {5, 1},
+      {4, 1},
+      {3, 1},
+      {2, 1},
+      {2, 0},
+      {1, 0},
+      {0, 0}};
+  REQUIRE(generate_line_dda_orthogonal({11, 3}, {0, 0}) == EXPECTED2);
 }
 
 TEST_CASE("bresenham benchmarks", "[.benchmark][los]") {
@@ -89,13 +135,23 @@ TEST_CASE("bresenham benchmarks", "[.benchmark][los]") {
   };
 
   BENCHMARK("TCODFOV_dda_compute") { return generate_line_dda({0, 0}, {11, 3}); };
+  BENCHMARK("TCODFOV_dda_compute_orthogonal") { return generate_line_dda_orthogonal({0, 0}, {11, 3}); };
 
-  std::vector<Point2D> line_preallocated(TCODFOV_dda_compute(0, 0, 11, 3, 0, nullptr));
+  {
+    std::vector<Point2D> line_preallocated(TCODFOV_dda_compute(0, 0, 11, 3, 0, nullptr));
+    BENCHMARK("TCODFOV_dda_compute preallocated") {
+      return TCODFOV_dda_compute(
+          0, 0, 11, 3, std::ssize(line_preallocated), reinterpret_cast<int*>(line_preallocated.data()));
+    };
+  }
 
-  BENCHMARK("TCODFOV_dda_compute_preallocated") {
-    return TCODFOV_dda_compute(
-        0, 0, 11, 3, std::ssize(line_preallocated), reinterpret_cast<int*>(line_preallocated.data()));
-  };
+  {
+    std::vector<Point2D> line_preallocated(TCODFOV_dda_compute_orthogonal(0, 0, 11, 3, 0, nullptr));
+    BENCHMARK("TCODFOV_dda_compute_orthogonal preallocated") {
+      return TCODFOV_dda_compute_orthogonal(
+          0, 0, 11, 3, std::ssize(line_preallocated), reinterpret_cast<int*>(line_preallocated.data()));
+    };
+  }
 }
 
 TEST_CASE("BresenhamLine") {
