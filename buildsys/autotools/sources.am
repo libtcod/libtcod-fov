@@ -5,6 +5,7 @@ libtcod_fov_include_HEADERS = \
 	../../include/libtcod-fov/bresenham.h \
 	../../include/libtcod-fov/bresenham.hpp \
 	../../include/libtcod-fov/config.h \
+	../../include/libtcod-fov/dda.h \
 	../../include/libtcod-fov/error.h \
 	../../include/libtcod-fov/error.hpp \
 	../../include/libtcod-fov/fov.h \
@@ -20,6 +21,7 @@ libtcod_fov_include_HEADERS = \
 
 libtcod_fov_la_SOURCES = \
 	../../src/libtcod-fov/bresenham_c.c \
+	../../src/libtcod-fov/dda.c \
 	../../src/libtcod-fov/error.c \
 	../../src/libtcod-fov/fov_c.c \
 	../../src/libtcod-fov/fov_circular_raycasting.c \

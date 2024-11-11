@@ -2,8 +2,21 @@
 #include <algorithm>
 #include <array>
 #include <catch2/catch_all.hpp>
-#include <libtcod-fov/bresenham.hpp>
 #include <vector>
+
+#include "libtcod-fov/bresenham.hpp"
+#include "libtcod-fov/dda.h"
+
+struct Point2D {
+  int x;
+  int y;
+
+  bool operator==(const Point2D& other) const noexcept { return x == other.x && y == other.y; }
+
+  friend std::ostream& operator<<(std::ostream& out, const Point2D& data) {
+    return out << '{' << data.x << ',' << ' ' << data.y << '}';
+  }
+};
 
 /**
     Return a vector of bresenham coordinates, including both endpoints.
@@ -21,6 +34,14 @@ std::vector<std::array<int, 2>> generate_line(const std::array<int, 2>& begin, c
   return line;
 }
 
+/// Return a vector of DDA coordinates, including both endpoints.
+std::vector<Point2D> generate_line_dda(const std::array<int, 2>& begin, const std::array<int, 2>& end) {
+  auto length = TCODFOV_dda_compute(begin.at(0), begin.at(1), end.at(0), end.at(1), 0, nullptr);
+  std::vector<Point2D> line(length);
+  TCODFOV_dda_compute(begin.at(0), begin.at(1), end.at(0), end.at(1), length, reinterpret_cast<int*>(line.data()));
+  return line;
+}
+
 /** Dummy callback for older bresenham functions. */
 bool null_bresenham_callback([[maybe_unused]] int x, [[maybe_unused]] int y) { return true; }
 
@@ -34,7 +55,17 @@ TEST_CASE("TCODFOV_line_step_mt") {
   REQUIRE(generate_line({11, 3}, {0, 0}) == EXPECTED2);
 }
 
-TEST_CASE("bresenham benchmarks", "[.benchmark]") {
+TEST_CASE("TCODFOV_dda_compute") {
+  const std::vector<Point2D> EXPECTED = {
+      {0, 0}, {1, 0}, {2, 1}, {3, 1}, {4, 1}, {5, 1}, {6, 2}, {7, 2}, {8, 2}, {9, 2}, {10, 3}, {11, 3}};
+  REQUIRE(generate_line_dda({0, 0}, {11, 3}) == EXPECTED);
+
+  const std::vector<Point2D> EXPECTED2 = {
+      {11, 3}, {10, 3}, {9, 2}, {8, 2}, {7, 2}, {6, 2}, {5, 1}, {4, 1}, {3, 1}, {2, 1}, {1, 0}, {0, 0}};
+  REQUIRE(generate_line_dda({11, 3}, {0, 0}) == EXPECTED2);
+}
+
+TEST_CASE("bresenham benchmarks", "[.benchmark][los]") {
   BENCHMARK("TCODFOV_line_step_mt") {
     TCODFOV_bresenham_data_t bresenham_stack_data;
     int x;
@@ -55,6 +86,15 @@ TEST_CASE("bresenham benchmarks", "[.benchmark]") {
   BENCHMARK("BresenhamLine (to vector)") {
     tcod::BresenhamLine it{{0, 0}, {11, 3}};
     return std::vector<std::array<int, 2>>{it.begin(), it.end()};
+  };
+
+  BENCHMARK("TCODFOV_dda_compute") { return generate_line_dda({0, 0}, {11, 3}); };
+
+  std::vector<Point2D> line_preallocated(TCODFOV_dda_compute(0, 0, 11, 3, 0, nullptr));
+
+  BENCHMARK("TCODFOV_dda_compute_preallocated") {
+    return TCODFOV_dda_compute(
+        0, 0, 11, 3, std::ssize(line_preallocated), reinterpret_cast<int*>(line_preallocated.data()));
   };
 }
 
