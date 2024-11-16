@@ -171,8 +171,8 @@ static void merge_input(const DiamondFovState* __restrict state, RaycastTile* __
     ray->ignore = true;
   }
   if (!ray->ignore && !TCODFOV_map2d_get_bool(state->transparent, x, y)) {
-    ray->x_error = ray->x_obscurity = ABS(ray->x_relative);
-    ray->y_error = ray->y_obscurity = ABS(ray->y_relative);
+    ray->x_error = ray->x_obscurity = TCODFOV_ABS(ray->x_relative);
+    ray->y_error = ray->y_obscurity = TCODFOV_ABS(ray->y_relative);
   }
 }
 /**

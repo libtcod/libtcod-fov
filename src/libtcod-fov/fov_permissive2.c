@@ -278,8 +278,8 @@ static void check_quadrant(
       break;
     }
     View** current_view = active_views->view_ptrs;
-    const int start_j = MAX(i - extent_x, 0);
-    const int max_j = MIN(i, extent_y);
+    const int start_j = TCODFOV_MAX(i - extent_x, 0);
+    const int max_j = TCODFOV_MIN(i, extent_y);
     for (int j = start_j; j <= max_j; ++j) {
       if (!active_views->count || current_view == view_array_end(active_views)) {
         break;
@@ -349,10 +349,10 @@ TCODFOV_Error TCODFOV_map_compute_fov_permissive2(
   int min_y = pov_y;
   int max_y = TCODFOV_map2d_get_height(fov) - pov_y - 1;
   if (max_radius > 0) {
-    min_x = MIN(min_x, max_radius);
-    max_x = MIN(max_x, max_radius);
-    min_y = MIN(min_y, max_radius);
-    max_y = MIN(max_y, max_radius);
+    min_x = TCODFOV_MIN(min_x, max_radius);
+    max_x = TCODFOV_MIN(max_x, max_radius);
+    min_y = TCODFOV_MIN(min_y, max_radius);
+    max_y = TCODFOV_MIN(max_y, max_radius);
   }
   /* calculate fov. precise permissive field of view */
   check_quadrant(

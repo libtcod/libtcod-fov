@@ -91,10 +91,10 @@ TCODFOV_Error TCODFOV_map_compute_fov_circular_raycasting(
   int x_max = TCODFOV_map2d_get_width(fov);
   int y_max = TCODFOV_map2d_get_height(fov);
   if (max_radius > 0) {
-    x_min = MAX(x_min, pov_x - max_radius);
-    y_min = MAX(y_min, pov_y - max_radius);
-    x_max = MIN(x_max, pov_x + max_radius + 1);
-    y_max = MIN(y_max, pov_y + max_radius + 1);
+    x_min = TCODFOV_MAX(x_min, pov_x - max_radius);
+    y_min = TCODFOV_MAX(y_min, pov_y - max_radius);
+    x_max = TCODFOV_MIN(x_max, pov_x + max_radius + 1);
+    y_max = TCODFOV_MIN(y_max, pov_y + max_radius + 1);
   }
   if (!TCODFOV_map2d_in_bounds(fov, pov_x, pov_y)) {
     TCODFOV_set_errorvf("Point of view {%i, %i} is out of bounds.", pov_x, pov_y);

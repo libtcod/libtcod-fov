@@ -147,10 +147,10 @@ TCODFOV_Error TCODFOV_map_postprocess(
   int x_max = TCODFOV_map2d_get_width(fov);
   int y_max = TCODFOV_map2d_get_height(fov);
   if (radius > 0) {
-    x_min = MAX(x_min, pov_x - radius);
-    y_min = MAX(y_min, pov_y - radius);
-    x_max = MIN(x_max, pov_x + radius + 1);
-    y_max = MIN(y_max, pov_y + radius + 1);
+    x_min = TCODFOV_MAX(x_min, pov_x - radius);
+    y_min = TCODFOV_MAX(y_min, pov_y - radius);
+    x_max = TCODFOV_MIN(x_max, pov_x + radius + 1);
+    y_max = TCODFOV_MIN(y_max, pov_y + radius + 1);
   }
   TCODFOV_map_postprocess_quadrant(transparent, fov, x_min, y_min, pov_x, pov_y, -1, -1);
   TCODFOV_map_postprocess_quadrant(transparent, fov, pov_x, y_min, x_max - 1, pov_y, 1, -1);

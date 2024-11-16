@@ -140,8 +140,8 @@ TCODFOV_Error TCODFOV_map_compute_fov_recursive_shadowcasting(
     return TCODFOV_E_INVALID_ARGUMENT;
   }
   if (max_radius <= 0) {
-    const int max_radius_x = MAX(TCODFOV_map2d_get_width(fov) - pov_x, pov_x);
-    const int max_radius_y = MAX(TCODFOV_map2d_get_height(fov) - pov_y, pov_y);
+    const int max_radius_x = TCODFOV_MAX(TCODFOV_map2d_get_width(fov) - pov_x, pov_x);
+    const int max_radius_y = TCODFOV_MAX(TCODFOV_map2d_get_height(fov) - pov_y, pov_y);
     max_radius = (int)(sqrt(max_radius_x * max_radius_x + max_radius_y * max_radius_y)) + 1;
   }
   /* recursive shadow casting */

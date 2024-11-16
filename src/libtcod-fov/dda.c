@@ -8,7 +8,7 @@ ptrdiff_t TCODFOV_dda_compute(
     double begin_x, double begin_y, double end_x, double end_y, ptrdiff_t out_n, int* __restrict out_xy) {
   const ptrdiff_t dx = (ptrdiff_t)(end_x - begin_x);
   const ptrdiff_t dy = (ptrdiff_t)(end_y - begin_y);
-  const ptrdiff_t N = MAX(ABS(dx), ABS(dy));
+  const ptrdiff_t N = TCODFOV_MAX(TCODFOV_ABS(dx), TCODFOV_ABS(dy));
   const double divN = (N == 0) ? 0.0 : 1.0 / N;
   const double x_step = dx * divN;
   const double y_step = dy * divN;
@@ -27,8 +27,8 @@ ptrdiff_t TCODFOV_dda_compute_orthogonal(
     double begin_x, double begin_y, double end_x, double end_y, ptrdiff_t out_n, int* __restrict out_xy) {
   const double dx = end_x - begin_x;
   const double dy = end_y - begin_y;
-  const double nx = ABS(dx);
-  const double ny = ABS(dy);
+  const double nx = TCODFOV_ABS(dx);
+  const double ny = TCODFOV_ABS(dy);
   const int sign_x = dx > 0 ? 1 : -1;
   const int sign_y = dy > 0 ? 1 : -1;
 

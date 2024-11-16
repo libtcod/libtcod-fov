@@ -70,8 +70,8 @@ static void compute_quadrant(
       const double slopes_per_cell = 1.0 / (double)(iteration);
       const double half_slopes = slopes_per_cell * 0.5;
       int processed_cell = (int)((min_angle + half_slopes) / slopes_per_cell);
-      const int minx = MAX(0, pov_x - iteration);
-      const int maxx = MIN(TCODFOV_map2d_get_width(fov) - 1, pov_x + iteration);
+      const int minx = TCODFOV_MAX(0, pov_x - iteration);
+      const int maxx = TCODFOV_MIN(TCODFOV_map2d_get_width(fov) - 1, pov_x + iteration);
       done = true;
       for (int x = pov_x + (processed_cell * dx); x >= minx && x <= maxx; x += dx) {
         /* calculate slopes per cell */
@@ -96,8 +96,8 @@ static void compute_quadrant(
                   if (start_slope >= start_angle[idx] && end_slope <= end_angle[idx]) {
                     visible = false;
                   } else {
-                    start_angle[idx] = MIN(start_angle[idx], start_slope);
-                    end_angle[idx] = MAX(end_angle[idx], end_slope);
+                    start_angle[idx] = TCODFOV_MIN(start_angle[idx], start_slope);
+                    end_angle[idx] = TCODFOV_MAX(end_angle[idx], end_slope);
                     extended = true;
                   }
                 }
@@ -159,8 +159,8 @@ static void compute_quadrant(
       const double slopes_per_cell = 1.0 / (double)(iteration);
       const double half_slopes = slopes_per_cell * 0.5;
       int processed_cell = (int)((min_angle + half_slopes) / slopes_per_cell);
-      const int miny = MAX(0, pov_y - iteration);
-      const int maxy = MIN(TCODFOV_map2d_get_height(fov) - 1, pov_y + iteration);
+      const int miny = TCODFOV_MAX(0, pov_y - iteration);
+      const int maxy = TCODFOV_MIN(TCODFOV_map2d_get_height(fov) - 1, pov_y + iteration);
       done = true;
       for (int y = pov_y + (processed_cell * dy); y >= miny && y <= maxy; y += dy) {
         /* calculate slopes per cell */
@@ -185,8 +185,8 @@ static void compute_quadrant(
                   if (start_slope >= start_angle[idx] && end_slope <= end_angle[idx]) {
                     visible = false;
                   } else {
-                    start_angle[idx] = MIN(start_angle[idx], start_slope);
-                    end_angle[idx] = MAX(end_angle[idx], end_slope);
+                    start_angle[idx] = TCODFOV_MIN(start_angle[idx], start_slope);
+                    end_angle[idx] = TCODFOV_MAX(end_angle[idx], end_slope);
                     extended = true;
                   }
                 }
