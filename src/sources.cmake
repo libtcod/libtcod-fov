@@ -6,6 +6,7 @@ target_sources(${PROJECT_NAME} PRIVATE
     libtcod-fov/fov_c.c
     libtcod-fov/fov_circular_raycasting.c
     libtcod-fov/fov_diamond_raycasting.c
+    libtcod-fov/fov_pascal.c
     libtcod-fov/fov_permissive2.c
     libtcod-fov/fov_recursive_shadowcasting.c
     libtcod-fov/fov_restrictive.c
@@ -28,6 +29,7 @@ install(FILES
     ../include/libtcod-fov/error.hpp
     ../include/libtcod-fov/fov.h
     ../include/libtcod-fov/fov.hpp
+    ../include/libtcod-fov/fov_pascal.h
     ../include/libtcod-fov/fov_triage.h
     ../include/libtcod-fov/fov_types.h
     ../include/libtcod-fov/libtcod_int.h

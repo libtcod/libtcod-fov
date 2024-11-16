@@ -10,6 +10,7 @@ libtcod_fov_include_HEADERS = \
 	../../include/libtcod-fov/error.hpp \
 	../../include/libtcod-fov/fov.h \
 	../../include/libtcod-fov/fov.hpp \
+	../../include/libtcod-fov/fov_pascal.h \
 	../../include/libtcod-fov/fov_triage.h \
 	../../include/libtcod-fov/fov_types.h \
 	../../include/libtcod-fov/libtcod_int.h \
@@ -26,6 +27,7 @@ libtcod_fov_la_SOURCES = \
 	../../src/libtcod-fov/fov_c.c \
 	../../src/libtcod-fov/fov_circular_raycasting.c \
 	../../src/libtcod-fov/fov_diamond_raycasting.c \
+	../../src/libtcod-fov/fov_pascal.c \
 	../../src/libtcod-fov/fov_permissive2.c \
 	../../src/libtcod-fov/fov_recursive_shadowcasting.c \
 	../../src/libtcod-fov/fov_restrictive.c \

@@ -150,4 +150,12 @@ static inline void TCODFOV_map2d_set_bool(TCODFOV_Map2D* __restrict map, int x, 
 static inline void TCODFOV_map2d_set_int(TCODFOV_Map2D* __restrict map, int x, int y, int value) {
   TCODFOV_map2d_set_bool(map, x, y, value != 0);  // Fallback until maps can hold integers
 }
+
+static inline double TCODFOV_map2d_get_d(const TCODFOV_Map2D* __restrict map, int x, int y) {
+  return TCODFOV_map2d_get_bool(map, x, y) ? 1.0 : 0.0;  // Fallback until maps can hold floats
+}
+
+static inline void TCODFOV_map2d_set_d(TCODFOV_Map2D* __restrict map, int x, int y, double value) {
+  TCODFOV_map2d_set_bool(map, x, y, value >= 0.5);  // Fallback until maps can hold floats
+}
 #endif  // TCODFOV_MAP_INLINE_H_

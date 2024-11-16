@@ -105,7 +105,7 @@ TCODFOV_Error TCODFOV_triage_2d(
   // X = transparent: caches input transparency if applicable
   // Y = always visible: all tiles to this tile are always visible
   // Z = maybe visible: at least one tile to this tile is maybe visible
-  int8_t* __restrict row = malloc(TCODFOV_map2d_get_width(out) * 3);
+  int8_t* __restrict row = malloc(TCODFOV_map2d_get_width(out) * 3 * sizeof(*row));
   if (!row) {
     TCODFOV_set_errorv("Out of memory.");
     return TCODFOV_E_OUT_OF_MEMORY;
@@ -115,8 +115,9 @@ TCODFOV_Error TCODFOV_triage_2d(
 
   triage_scan_init(transparent, out, pov_x, pov_y, row);
 
-  memcpy(row2, row, TCODFOV_map2d_get_width(out));
+  memcpy(row2, row, TCODFOV_map2d_get_width(out) * sizeof(*row));
   triage_scan_next_row(transparent, out, pov_x, pov_y - 1, -1, 1, row2, row3);
-  triage_scan_next_row(transparent, out, pov_x, pov_y + 1, 1, 1, row, row2);
+  memcpy(row2, row, TCODFOV_map2d_get_width(out) * sizeof(*row));
+  triage_scan_next_row(transparent, out, pov_x, pov_y + 1, 1, 1, row2, row3);
   return TCODFOV_E_OK;
 }
