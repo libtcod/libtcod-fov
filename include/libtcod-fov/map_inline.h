@@ -36,6 +36,7 @@ static inline int TCODFOV_map2d_get_width(const TCODFOV_Map2D* __restrict map) {
   switch (map->type) {
     case TCODFOV_MAP2D_CALLBACK:
     case TCODFOV_MAP2D_BITPACKED:
+    case TCODFOV_MAP2D_CONTIGIOUS:
       // Multiple structs share the same shape format
       return map->bool_callback.shape[1];
     case TCODFOV_MAP2D_DEPRECATED:
@@ -52,6 +53,7 @@ static inline int TCODFOV_map2d_get_height(const TCODFOV_Map2D* __restrict map) 
   switch (map->type) {
     case TCODFOV_MAP2D_CALLBACK:
     case TCODFOV_MAP2D_BITPACKED:
+    case TCODFOV_MAP2D_CONTIGIOUS:
       return map->bool_callback.shape[0];
     case TCODFOV_MAP2D_DEPRECATED:
       return map->deprecated_map.map.height;
@@ -76,7 +78,6 @@ static inline bool TCODFOV_map2d_in_bounds(const TCODFOV_Map2D* __restrict map, 
 /// @param y Y coordinate.
 /// @return Boolean result, false if out-of-bounds or `map` is NULL.
 static inline bool TCODFOV_map2d_get_bool(const TCODFOV_Map2D* __restrict map, int x, int y) {
-  if (!map) return 0;
   if (!TCODFOV_map2d_in_bounds(map, x, y)) return 0;
   switch (map->type) {
     case TCODFOV_MAP2D_CALLBACK:
@@ -98,6 +99,21 @@ static inline bool TCODFOV_map2d_get_bool(const TCODFOV_Map2D* __restrict map, i
       const uint8_t active_bit = 1 << (x % 8);
       return (map->bitpacked.data[map->bitpacked.y_stride * y + (x / 8)] & active_bit) != 0;
     }
+    case TCODFOV_MAP2D_CONTIGIOUS: {
+      const ptrdiff_t index = map->contigious.shape[0] * y + x;
+      switch (map->contigious.item_type) {
+        case TCODFOV_DATATYPE_BOOL:
+          return ((bool*)map->contigious.data)[index];
+        case TCODFOV_DATATYPE_UINT8:
+          return ((uint8_t*)map->contigious.data)[index] != 0;
+        case TCODFOV_DATATYPE_FLOAT:
+          return ((float*)map->contigious.data)[index] != 0;
+        case TCODFOV_DATATYPE_DOUBLE:
+          return ((double*)map->contigious.data)[index] != 0;
+        default:
+          return 0;
+      }
+    };
     default:
       return 0;
   }
@@ -109,7 +125,6 @@ static inline bool TCODFOV_map2d_get_bool(const TCODFOV_Map2D* __restrict map, i
 /// @param y Y coordinate.
 /// @param value Assigned value.
 static inline void TCODFOV_map2d_set_bool(TCODFOV_Map2D* __restrict map, int x, int y, bool value) {
-  if (!map) return;
   if (!TCODFOV_map2d_in_bounds(map, x, y)) return;
   switch (map->type) {
     case TCODFOV_MAP2D_CALLBACK:
@@ -137,25 +152,134 @@ static inline void TCODFOV_map2d_set_bool(TCODFOV_Map2D* __restrict map, int x, 
       map->bitpacked.data[index] = (map->bitpacked.data[index] & ~active_bit) | (value ? active_bit : 0);
       return;
     }
+    case TCODFOV_MAP2D_CONTIGIOUS: {
+      const ptrdiff_t index = map->contigious.shape[0] * y + x;
+      switch (map->contigious.item_type) {
+        case TCODFOV_DATATYPE_BOOL:
+          ((bool*)map->contigious.data)[index] = value;
+          return;
+        case TCODFOV_DATATYPE_UINT8:
+          ((uint8_t*)map->contigious.data)[index] = value;
+          return;
+        case TCODFOV_DATATYPE_FLOAT:
+          ((float*)map->contigious.data)[index] = value;
+          return;
+        case TCODFOV_DATATYPE_DOUBLE:
+          ((double*)map->contigious.data)[index] = value;
+          return;
+        default:
+          return;
+      }
+    };
     default:
       return;
   }
 }
 
-/// @brief Assign `value` to `{x, y}` on `map`. Out-of-bounds writes are ignored.
+static inline uint8_t TCODFOV_map2d_get_u8(TCODFOV_Map2D* __restrict map, int x, int y) {
+  if (!TCODFOV_map2d_in_bounds(map, x, y)) return 0;
+  switch (map->type) {
+    case TCODFOV_MAP2D_CONTIGIOUS: {
+      const ptrdiff_t index = map->contigious.shape[0] * y + x;
+      switch (map->contigious.item_type) {
+        case TCODFOV_DATATYPE_BOOL:
+          return ((bool*)map->contigious.data)[index] ? 255 : 0;
+        case TCODFOV_DATATYPE_UINT8:
+          return ((uint8_t*)map->contigious.data)[index];
+        case TCODFOV_DATATYPE_FLOAT:
+          return (uint8_t)(((float*)map->contigious.data)[index] * 255.0f);
+        case TCODFOV_DATATYPE_DOUBLE:
+          return (uint8_t)(((double*)map->contigious.data)[index] * 255.0);
+        default:
+          return 0;
+      }
+    };
+    default:
+      return TCODFOV_map2d_get_bool(map, x, y) ? 255 : 0;
+  }
+}
+
+/// @brief Assign a normalized `value` to `{x, y}` on `map`. Out-of-bounds writes are ignored.
 /// @param map Map union pointer, can be NULL.
 /// @param x X coordinate.
 /// @param y Y coordinate.
 /// @param value Assigned value.
-static inline void TCODFOV_map2d_set_int(TCODFOV_Map2D* __restrict map, int x, int y, int value) {
-  TCODFOV_map2d_set_bool(map, x, y, value != 0);  // Fallback until maps can hold integers
+static inline void TCODFOV_map2d_set_u8(TCODFOV_Map2D* __restrict map, int x, int y, uint8_t value) {
+  if (!TCODFOV_map2d_in_bounds(map, x, y)) return;
+  switch (map->type) {
+    case TCODFOV_MAP2D_CONTIGIOUS: {
+      const ptrdiff_t index = map->contigious.shape[0] * y + x;
+      switch (map->contigious.item_type) {
+        case TCODFOV_DATATYPE_BOOL:
+          ((bool*)map->contigious.data)[index] = value > 0;
+          return;
+        case TCODFOV_DATATYPE_UINT8:
+          ((uint8_t*)map->contigious.data)[index] = value;
+          return;
+        case TCODFOV_DATATYPE_FLOAT:
+          ((float*)map->contigious.data)[index] = (float)value * (1.0f / 255.0f);
+          return;
+        case TCODFOV_DATATYPE_DOUBLE:
+          ((double*)map->contigious.data)[index] = (double)value * (1.0 / 255.0);
+          return;
+        default:
+          return;
+      }
+    };
+    default:
+      TCODFOV_map2d_set_bool(map, x, y, value > 0);
+      return;
+  }
 }
 
 static inline double TCODFOV_map2d_get_d(const TCODFOV_Map2D* __restrict map, int x, int y) {
-  return TCODFOV_map2d_get_bool(map, x, y) ? 1.0 : 0.0;  // Fallback until maps can hold floats
+  if (!TCODFOV_map2d_in_bounds(map, x, y)) return 0;
+  switch (map->type) {
+    case TCODFOV_MAP2D_CONTIGIOUS: {
+      const ptrdiff_t index = map->contigious.shape[0] * y + x;
+      switch (map->contigious.item_type) {
+        case TCODFOV_DATATYPE_BOOL:
+          return ((bool*)map->contigious.data)[index] ? 1.0 : 0.0;
+        case TCODFOV_DATATYPE_UINT8:
+          return (double)((uint8_t*)map->contigious.data)[index] * (1.0 / 255.0);
+        case TCODFOV_DATATYPE_FLOAT:
+          return (double)((float*)map->contigious.data)[index];
+        case TCODFOV_DATATYPE_DOUBLE:
+          return ((double*)map->contigious.data)[index];
+        default:
+          return 0;
+      }
+    };
+    default:
+      return TCODFOV_map2d_get_bool(map, x, y) ? 1.0 : 0.0;
+  }
 }
 
 static inline void TCODFOV_map2d_set_d(TCODFOV_Map2D* __restrict map, int x, int y, double value) {
-  TCODFOV_map2d_set_bool(map, x, y, value >= 0.5);  // Fallback until maps can hold floats
+  if (!TCODFOV_map2d_in_bounds(map, x, y)) return;
+  switch (map->type) {
+    case TCODFOV_MAP2D_CONTIGIOUS: {
+      const ptrdiff_t index = map->contigious.shape[0] * y + x;
+      switch (map->contigious.item_type) {
+        case TCODFOV_DATATYPE_BOOL:
+          ((bool*)map->contigious.data)[index] = value >= 0.5;
+          return;
+        case TCODFOV_DATATYPE_UINT8:
+          ((uint8_t*)map->contigious.data)[index] = (uint8_t)(value * 255.0);
+          return;
+        case TCODFOV_DATATYPE_FLOAT:
+          ((float*)map->contigious.data)[index] = (float)value;
+          return;
+        case TCODFOV_DATATYPE_DOUBLE:
+          ((double*)map->contigious.data)[index] = value;
+          return;
+        default:
+          return;
+      }
+    };
+    default:
+      TCODFOV_map2d_set_bool(map, x, y, value >= 0.5);
+      return;
+  }
 }
 #endif  // TCODFOV_MAP_INLINE_H_

@@ -71,7 +71,7 @@ static void triage_scan_next_row(
 
   // Output triage data
   for (int x = 0; x < TCODFOV_map2d_get_width(out); ++x) {
-    TCODFOV_map2d_set_int(out, x, scan_y, next_row[x] & 0b11);
+    TCODFOV_map2d_set_u8(out, x, scan_y, next_row[x] & 0b11);
   }
 
   // Swap next_row and prev_row and continue
@@ -95,7 +95,7 @@ static void triage_scan_init(
     if (row[x - 1] & 0b100) row[x] = TCODFOV_map2d_get_bool(transparent, x, pov_y) ? 0b111 : 0b011;
   }
   for (int x = 0; x < TCODFOV_map2d_get_width(out); ++x) {
-    TCODFOV_map2d_set_int(out, x, pov_y, row[x] & 0b11);
+    TCODFOV_map2d_set_u8(out, x, pov_y, row[x] & 0b11);
   }
 }
 

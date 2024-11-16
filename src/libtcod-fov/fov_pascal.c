@@ -6,6 +6,10 @@
 
 #include "map_inline.h"
 
+/// @file fov_pascal.c
+/// Pascal’s triangle diffusion, based on a modifed version of this article:
+/// https://towardsdatascience.com/a-quick-and-clear-look-at-grid-based-visibility-bf63769fbc78
+
 static void pascal_scan_line(
     const TCODFOV_Map2D* __restrict transparent,  // Input transparency
     TCODFOV_Map2D* __restrict out,
@@ -26,6 +30,7 @@ static void pascal_scan_line(
     ++casts;
     visiblity += prev_row[x - x_step];
 
+    // Simple case will cause visiblity to cross the diagonal partition. Not sure if this is a major issue yet.
     if (pov_x - iteration <= x && x <= pov_x + iteration) {  // Cast from previous row
       ++casts;
       visiblity += prev_row[x];

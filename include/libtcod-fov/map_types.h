@@ -14,7 +14,15 @@ typedef enum TCODFOV_Map2DType {
   TCODFOV_MAP2D_CALLBACK = 1,
   TCODFOV_MAP2D_DEPRECATED = 2,
   TCODFOV_MAP2D_BITPACKED = 3,
+  TCODFOV_MAP2D_CONTIGIOUS = 4,
 } TCODFOV_Map2DType;
+
+typedef enum TCODFOV_DataType {
+  TCODFOV_DATATYPE_BOOL = 0,
+  TCODFOV_DATATYPE_UINT8 = 1,
+  TCODFOV_DATATYPE_FLOAT = 2,
+  TCODFOV_DATATYPE_DOUBLE = 3,
+} TCODFOV_DataType;
 
 /// @brief Callbacks to get/set on 2D grids.
 struct TCODFOV_Map2DCallback {
@@ -40,11 +48,20 @@ struct TCODFOV_Map2DBitpacked {
   ptrdiff_t y_stride;  // Array stride along the y-axis
 };
 
+/// @brief Contigious 2D grid.
+struct TCODFOV_Map2DContigious {
+  TCODFOV_Map2DType type;  // Must be TCODFOV_MAP2D_CONTIGIOUS
+  int shape[2];  // {height, width}
+  unsigned char* __restrict data;  // Boolean data packed into bytes
+  TCODFOV_DataType item_type;
+};
+
 /// @brief Union type for 2D maps.
 typedef union TCODFOV_Map2D {
   TCODFOV_Map2DType type;
   struct TCODFOV_Map2DCallback bool_callback;
   struct TCODFOV_Map2DDeprecated deprecated_map;
   struct TCODFOV_Map2DBitpacked bitpacked;
+  struct TCODFOV_Map2DContigious contigious;
 } TCODFOV_Map2D;
 #endif  // TCODFOV_MAP_TYPES_H_
