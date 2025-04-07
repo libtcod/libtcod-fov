@@ -153,5 +153,7 @@
             "source.fixAll": "always",
             "source.organizeImports": "never"
         },
-    }
+    },
+    "C_Cpp.default.configurationProvider": "mesonbuild.mesonbuild",
+    "C_Cpp.default.compileCommands": "c:\\Users\\4b796\\Projects\\libtcod-fov\\builddir/compile_commands.json"
 }
