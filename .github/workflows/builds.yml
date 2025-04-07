@@ -15,6 +15,8 @@ defaults:
 
 env:
   VCPKG_FETCH_DEPTH: 1 # Depth to fetch vcpkg commits, must include the baseline.
+  CMAKE_BUILD_DIR: build
+  VCPKG_ROOT: ${{github.workspace}}/vcpkg
 
 jobs:
   CMake:
@@ -35,6 +37,7 @@ jobs:
             triplet: x64-linux
             shared: dynamic
             config: Release
+            cpack: true
 
           - os: macos-14
             triplet: arm64-osx
@@ -44,6 +47,7 @@ jobs:
             triplet: arm64-osx
             shared: dynamic
             config: Release
+            cpack: true
 
           - os: windows-2022
             triplet: x64-windows
@@ -53,6 +57,7 @@ jobs:
             triplet: x64-windows
             shared: dynamic
             config: Release
+            cpack: true
 
     env:
       CMAKE_BUILD_DIR: build
@@ -111,6 +116,21 @@ jobs:
       - name: CMake test install
         run: |
           cmake --install ${{env.CMAKE_BUILD_DIR}} --config ${{matrix.config}}
+      - name: CPack
+        if: matrix.cpack
+        run: |
+          cpack --config ${{env.CMAKE_BUILD_DIR}}/CPackConfig.cmake --verbose
+      - name: Upload CPack
+        if: matrix.cpack
+        uses: actions/upload-artifact@v4
+        with:
+          name: cpack-dist-${{ matrix.triplet }}
+          path: |
+            *.zip
+            *.tar.*
+          retention-days: 3
+          compression-level: 0
+          if-no-files-found: error
 
   coverage:
     runs-on: ${{ matrix.os }}
@@ -159,7 +179,7 @@ jobs:
       - name: List coverage files
         run: find . | grep -e ".gc..$"
       - name: Generate coverage data
-        run: gcov CMakeFiles/libtcod-fov.dir/src/libtcod-fov/**.o tests/CMakeFiles/unittest.dir/*.o
+        run: gcov src/CMakeFiles/libtcod-fov.dir/libtcod-fov/**.o tests/CMakeFiles/unittest.dir/*.o
       - uses: codecov/codecov-action@v4
         with:
           token: ${{ secrets.CODECOV_TOKEN }}

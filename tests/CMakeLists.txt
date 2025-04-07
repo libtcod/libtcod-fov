@@ -1,4 +1,4 @@
-cmake_minimum_required (VERSION 3.13...3.21)
+cmake_minimum_required(VERSION 3.23...4.0)
 project(PackageTest CXX)
 
 set(_IMPORT_CHECK_TARGETS "")  # Suppress undefined variable in Catch2Targets.cmake.
@@ -17,9 +17,6 @@ add_executable(unittest unittest.cpp ${SRC_FILES})
 target_link_libraries(unittest libtcod-fov::libtcod-fov Catch2::Catch2 Catch2::Catch2WithMain)
 target_compile_features(unittest PUBLIC cxx_std_20)
 target_compile_definitions(unittest PRIVATE CATCH_CONFIG_ENABLE_BENCHMARKING)
-if (MSVC)
-    target_compile_options(unittest PRIVATE /utf-8)
-endif()
 
 if(MSVC)
   target_compile_options(unittest PRIVATE /W4)
