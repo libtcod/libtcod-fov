@@ -6,6 +6,7 @@
 #include <gsl/gsl>
 #include <iostream>
 #include <memory>
+#include <random>
 #include <ranges>
 #include <string>
 #include <utility>
