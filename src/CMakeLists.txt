@@ -54,11 +54,6 @@ if(LIBTCODFOV_INSTALL)
         COMPONENT Library
     )
     include(CMakePackageConfigHelpers)
-    get_filename_component(
-        INSTALL_FULL_INCLUDEDIR
-        ${CMAKE_INSTALL_INCLUDEDIR}
-        REALPATH BASE_DIR ${CMAKE_CURRENT_BINARY_DIR}
-    )
     install(
         EXPORT ${PROJECT_NAME}Targets
         DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/${PROJECT_NAME}
@@ -67,7 +62,8 @@ if(LIBTCODFOV_INSTALL)
     configure_package_config_file(${PROJECT_NAME}Config.cmake.in
         ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}Config.cmake
         INSTALL_DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/${PROJECT_NAME}
-        PATH_VARS INSTALL_FULL_INCLUDEDIR)
+        PATH_VARS CMAKE_INSTALL_INCLUDEDIR
+    )
     write_basic_package_version_file(
         ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}ConfigVersion.cmake
         COMPATIBILITY SameMajorVersion
