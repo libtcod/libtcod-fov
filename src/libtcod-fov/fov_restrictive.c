@@ -246,7 +246,7 @@ TCODFOV_Error TCODFOV_map_compute_fov_restrictive_shadowcasting(
   TCODFOV_map2d_set_bool(fov, pov_x, pov_y, true);
 
   /* calculate an approximated (excessive, just in case) maximum number of obstacles per octant */
-  const int max_obstacles = (TCODFOV_map2d_get_width(fov) * TCODFOV_map2d_get_height(fov)) / 7;
+  const int max_obstacles = TCODFOV_MAX((TCODFOV_map2d_get_width(fov) * TCODFOV_map2d_get_height(fov)) / 7, 16);
   double* start_angle = malloc(max_obstacles * sizeof(*start_angle));
   double* end_angle = malloc(max_obstacles * sizeof(*end_angle));
   if (!start_angle || !end_angle) {

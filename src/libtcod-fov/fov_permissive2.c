@@ -96,9 +96,9 @@ static void view_array_remove(ActiveViewArray* view_array, ptrdiff_t index) {
 
 /// @brief Insert a view into the active views array.
 static void view_array_insert(ActiveViewArray* view_array, ptrdiff_t index, View* view_ptr) {
-  ++view_array->count;
-  for (ptrdiff_t i = view_array->count - 1; i >= index; --i) view_array->view_ptrs[i + 1] = view_array->view_ptrs[i];
+  for (ptrdiff_t i = view_array->count; i > index; --i) view_array->view_ptrs[i] = view_array->view_ptrs[i - 1];
   view_array->view_ptrs[index] = view_ptr;
+  ++view_array->count;
 }
 
 /// @brief Return a past-the-end pointer for the active view array.
@@ -331,8 +331,10 @@ TCODFOV_Error TCODFOV_map_compute_fov_permissive2(
 
   // Preallocate views and bumps, assuming there will be no more bumps or active views than the number of map tiles.
   View* views = malloc(TCODFOV_map2d_get_width(fov) * TCODFOV_map2d_get_height(fov) * sizeof(*views));
-  ViewBumpContainer bumps = {
-      .data = malloc(TCODFOV_map2d_get_width(fov) * TCODFOV_map2d_get_height(fov) * sizeof(*bumps.data))};
+  const int bump_cap = TCODFOV_MAX(
+      TCODFOV_map2d_get_width(fov) * TCODFOV_map2d_get_height(fov),
+      16);  // maps <= 6 cells can overflow, minimum of 16 for memory safety
+  ViewBumpContainer bumps = {.data = malloc(bump_cap * sizeof(*bumps.data))};
   ActiveViewArray active_views = {
       .view_ptrs =
           malloc(TCODFOV_map2d_get_width(fov) * TCODFOV_map2d_get_height(fov) * sizeof(*active_views.view_ptrs))};
