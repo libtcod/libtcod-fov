@@ -10,6 +10,7 @@
 #include <CLI/CLI.hpp>
 #include <clocale>
 #include <filesystem>
+#include <fstream>
 #include <gsl/gsl>
 #include <iostream>
 #include <locale>
