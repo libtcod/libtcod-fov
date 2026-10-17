@@ -6,3 +6,6 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 This project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
+
+### Fixed
+- Symmetric shadowcasting rounds negative sector edges correctly, preserving visibility when a dungeon is rotated.
